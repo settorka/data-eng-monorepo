@@ -1,5 +1,5 @@
 from pyspark.sql import SparkSession
-from hudi.intro.local.python.jobs.config import get_hudi_options, configure_s3a_for_minio
+from config import get_hudi_options, configure_s3a_for_minio
 
 def create_sample_df(spark):
     data = [
@@ -31,7 +31,9 @@ def read_from_hudi(spark, base_path):
 if __name__ == "__main__":
     spark = SparkSession.builder \
         .appName("HudiInteractions") \
+        .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer") \
         .getOrCreate()
+
 
     configure_s3a_for_minio(spark)
 

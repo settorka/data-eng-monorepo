@@ -5,7 +5,7 @@ import sys
 
 DOCKER_IMAGE = "hudi-spark"
 SPARK_MASTER_URL = "spark://spark-master:7077"
-NETWORK_NAME = "hudi-net"
+NETWORK_NAME = "spark_hudi-net"
 SCRIPT_DIR = os.path.join(os.getcwd(), "jobs")
 CONTAINER_SCRIPT_DIR = "/app"
 
@@ -18,11 +18,11 @@ def run_spark_job(script_name):
     docker_cmd = [
         "docker", "run", "--rm",
         "--network", NETWORK_NAME,
-        "-v", f"{script_path}:{CONTAINER_SCRIPT_DIR}/{script_name}",
+        "-v", f"{os.path.abspath(SCRIPT_DIR)}:{CONTAINER_SCRIPT_DIR}",
         DOCKER_IMAGE,
         "spark-submit",
         "--master", SPARK_MASTER_URL,
-        "--packages", "org.apache.hudi:hudi-spark3.3-bundle_2.12:0.14.0",
+        "--packages", "org.apache.hudi:hudi-spark3.4-bundle_2.12:0.14.0",
         f"{CONTAINER_SCRIPT_DIR}/{script_name}"
     ]
 
