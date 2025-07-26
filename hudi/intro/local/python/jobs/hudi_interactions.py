@@ -32,6 +32,8 @@ if __name__ == "__main__":
     spark = SparkSession.builder \
         .appName("HudiInteractions") \
         .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer") \
+        .config("spark.driver.extraJavaOptions", "-Dlog4j.configuration=file:/app/log4j.properties") \
+        .config("spark.executor.extraJavaOptions", "-Dlog4j.configuration=file:/app/log4j.properties") \
         .getOrCreate()
 
 
