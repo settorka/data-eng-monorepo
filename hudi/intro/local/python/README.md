@@ -2,12 +2,12 @@
 ### pip
 1. Create the venv
 ```bash
-python3 -m venv hudivenv
+python3 -m venv hudi-venv
 ```
 
 2. Activate it
 ```bash
-source hudivenv/bin/activate
+source hudi-venv/bin/activate
 ```
 
 3. 
