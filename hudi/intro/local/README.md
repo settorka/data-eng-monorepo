@@ -45,9 +45,15 @@ docker run --rm \
 
 ## Data Storage
 Hudi writes to: s3a://hudi-bucket/<table_name>
-Backed by: ./minio/data/ on host
+Backed by: spark/minio/data/ on host
 MinIO UI: http://localhost:9001
 (Login: minioadmin / minioadmin)
+
+- Go to /minio in the root folder
+- run 
+```bash
+python3 minio-cli.py  create --bucket-name <bucket-name>
+```
 
 ## Logs & Output
 
