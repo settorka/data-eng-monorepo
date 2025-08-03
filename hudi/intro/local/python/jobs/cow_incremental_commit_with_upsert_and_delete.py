@@ -41,10 +41,11 @@ def create_upsert_df(spark: SparkSession) -> DataFrame:
     return spark.createDataFrame(data)
 
 def create_delete_df(spark: SparkSession) -> DataFrame:
-    """Create delete dataset with IDs of records to remove."""
+    """Create delete dataset with IDs of records to remove.
+       ts is included to satisfy precombine key requirement."""
     data = [
-        {"id": "2"},
-        {"id": "4"}
+        {"id": "2", "ts": 3000},  # delete Bob
+        {"id": "4", "ts": 3000}   # delete Dave
     ]
     return spark.createDataFrame(data)
 
@@ -63,7 +64,7 @@ def write_to_hudi(spark: SparkSession, df: DataFrame, base_path: str, mode: str,
     hudi_options = get_hudi_options(
         table_name=table_name,
         record_key="id",
-        precombine_key="ts" if operation != "delete" else None
+        precombine_key="ts"  # Specified for deletes too
     )
     hudi_options["hoodie.datasource.write.operation"] = operation
 
@@ -112,7 +113,7 @@ if __name__ == "__main__":
     # Step 1: Initial write
     initial_df = create_initial_df(spark)
     write_to_hudi(spark, initial_df, base_path, mode="overwrite")
-    commit1 = "00000000000001"  # Placeholder; will be actual instant time
+    commit1 = "00000000000001"  # Placeholder; will be actual instant time in prod
     logger.info("=== STATE AFTER INITIAL WRITE ===")
     read_hudi_table(spark, base_path).show(truncate=False)
 
