@@ -1,0 +1,25 @@
+version: "3.8"
+
+services:
+  timescaledb:
+    image: timescale/timescaledb:latest-pg15
+    container_name: timescaledb
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: trading
+    volumes:
+      - timescaledb_data:/var/lib/postgresql/data
+      - ./Init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - cdc-net
+
+volumes:
+  timescaledb_data:
+
+networks:
+  cdc-net:
+    external: true
