@@ -1,3 +1,7 @@
+-- Enable TimescaleDB extension
+CREATE EXTENSION IF NOT EXISTS timescaledb;
+
+-- Create the table
 CREATE TABLE IF NOT EXISTS stock_trades (
     trade_id UUID PRIMARY KEY NOT NULL,
     stock_name TEXT NOT NULL,
@@ -6,10 +10,7 @@ CREATE TABLE IF NOT EXISTS stock_trades (
     trader_id UUID NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-)
+);
 
--- Enable TimescaleDB extension
-CREATE EXTENSION IF NOT EXISTS timescaledb;
-
--- Convert table to hypertable
+-- Convert to hypertable
 SELECT create_hypertable('stock_trades', 'created_at', if_not_exists => TRUE);
