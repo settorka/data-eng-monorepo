@@ -1,0 +1,20 @@
+{
+  "name": "stock_trades_connector",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "database.hostname": "timescaledb",
+    "database.port": "5432",
+    "database.user": "postgres",
+    "database.password": "postgres",
+    "database.dbname": "trading",
+    "database.server.name": "cdc", 
+    "plugin.name": "pgoutput",
+    "slot.name": "cdc_slot",
+    "publication.name": "cdc_publication",
+    "table.include.list": "public.stock_trades",
+    "tombstones.on.delete": "false",
+    "include.schema.changes": "false",
+    "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter"
+  }
+}
