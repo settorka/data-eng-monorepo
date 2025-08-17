@@ -1,3 +1,4 @@
 SQLAlchemy==2.0.42
 asyncpg==0.30.0
 Faker==37.5.3
+python-dotenv
