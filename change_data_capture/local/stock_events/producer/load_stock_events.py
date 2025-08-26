@@ -26,11 +26,11 @@ async def insert_trade(session: AsyncSession) -> StockTrade:
         StockTrade: The created trade object.
     """
     trade = StockTrade(
-        trade_id=str(uuid.uuid4()),
+        trade_id=uuid.uuid4(),
         stock_name=random.choice(["AAPL", "GOOG", "MSFT", "AMZN", "TSLA"]),
         stock_price=round(random.uniform(50, 500), 2),
         stock_purchase_choice=random.choice(["BUY", "SELL"]),
-        trader_id=str(uuid.uuid4()),
+        trader_id=uuid.uuid4(),
         created_at=datetime.utcnow(),
         updated_at=datetime.utcnow(),
     )

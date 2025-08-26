@@ -6,6 +6,7 @@ from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy import Column, String, Numeric, TIMESTAMP, CheckConstraint
+from sqlalchemy.dialects.postgresql import UUID
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -37,7 +38,9 @@ class StockTrade(Base):
 
     __tablename__ = "stock_trades"
 
-    trade_id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    trade_id = Column(
+        UUID(as_uuid=True) , primary_key=True, default=lambda: str(uuid.uuid4())
+    )
     stock_name = Column(String, nullable=False)
     stock_price = Column(Numeric(12, 2), nullable=False)
     stock_purchase_choice = Column(
@@ -45,7 +48,7 @@ class StockTrade(Base):
         CheckConstraint("stock_purchase_choice IN ('BUY','SELL')"),
         nullable=False,
     )
-    trader_id = Column(String, nullable=False, default=lambda: str(uuid.uuid4()))
+    trader_id = Column(UUID(as_uuid=True), nullable=False, default=uuid.uuid4)
     created_at = Column(TIMESTAMP, nullable=False, default=datetime.utcnow)
     updated_at = Column(TIMESTAMP, nullable=False, default=datetime.utcnow)
 
