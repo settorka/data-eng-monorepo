@@ -46,6 +46,7 @@ python3 setup.py list [--tool <tool_name>] [--project <tool>/<project>] [--full]
 ```
 Example output:
 
+```bash
 hudi/
 └── write_upsert/
     ├── local/
@@ -54,7 +55,7 @@ hudi/
     └── cloud/
         ├── aws/
         └── gcp/
-
+```
 
 #### Rename a Project or Tool
 
