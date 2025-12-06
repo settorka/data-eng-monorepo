@@ -1,9 +1,9 @@
 use tonic::transport::Channel;
 use tonic::Request;
-use crate::event::Event;
+use std::error::Error as StdError;
 
 pub mod chat {
-    tonic::include_proto!("chat"); 
+    tonic::include_proto!("chat");
 }
 
 use chat::{router_client::RouterClient, IngestResponse};
@@ -16,13 +16,16 @@ impl ElixirGrpcClient {
     pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
     where
         D: std::convert::TryInto<tonic::transport::Endpoint>,
-        D::Error: Into<StdError>,
+        D::Error: Into<Box<dyn StdError + Send + Sync>>,
     {
         let client = RouterClient::connect(dst).await?;
         Ok(Self { client })
     }
 
-    pub async fn ingest_event(&mut self, event: chat::Event) -> Result<IngestResponse, tonic::Status> {
+    pub async fn ingest_event(
+        &mut self,
+        event: chat::Event,
+    ) -> Result<IngestResponse, tonic::Status> {
         let req = Request::new(event);
         let res = self.client.ingest(req).await?;
         Ok(res.into_inner())
