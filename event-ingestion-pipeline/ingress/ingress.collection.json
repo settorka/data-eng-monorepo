@@ -1,0 +1,102 @@
+{
+  "info": {
+    "_postman_id": "a709f7d3-f8be-4f8c-9f0a-9c9ebf07c1d2",
+    "name": "Ingress Event API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "settorka"
+  },
+  "item": [
+    {
+      "name": "Chat Event",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"event_type\": \"chat\",\n  \"user_id\": \"user_123\",\n  \"room_id\": \"room_456\",\n  \"journey_id\": \"journey_999\",\n  \"timestamp\": 1733490000,\n  \"message\": \"Hello world\",\n  \"message_type\": \"text\",\n  \"chat_type\": \"group\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/v1/chat/ingestion",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "v1", "chat", "ingestion"]
+        }
+      }
+    },
+    {
+      "name": "Join Event",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"event_type\": \"join\",\n  \"user_id\": \"user_123\",\n  \"room_id\": \"room_456\",\n  \"timestamp\": 1733490000\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/v1/chat/ingestion",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "v1", "chat", "ingestion"]
+        }
+      }
+    },
+    {
+      "name": "Leave Event",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"event_type\": \"leave\",\n  \"user_id\": \"user_123\",\n  \"room_id\": \"room_456\",\n  \"timestamp\": 1733490000\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/v1/chat/ingestion",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "v1", "chat", "ingestion"]
+        }
+      }
+    },
+    {
+      "name": "Reaction Event",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"event_type\": \"reaction\",\n  \"user_id\": \"user_123\",\n  \"room_id\": \"room_456\",\n  \"message_id\": \"msg_777\",\n  \"emoji\": \"thumbs_up\",\n  \"timestamp\": 1733490000\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/v1/chat/ingestion",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "v1", "chat", "ingestion"]
+        }
+      }
+    }
+  ]
+}

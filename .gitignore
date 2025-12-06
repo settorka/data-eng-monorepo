@@ -3,3 +3,4 @@ spark/minio/data
 **.pyc
 **/*venv*/
 change_data_capture/local/stock_events/producer/cdc-stock-events
+**/target/
