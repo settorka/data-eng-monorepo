@@ -1,12 +1,12 @@
-use serde::(Deserialize,Serialize);
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(tag="event_type",rename_all = "snake_case")]
+#[serde(tag = "event_type", rename_all = "snake_case")]
 pub enum Event {
     Chat(ChatEvent),
     Join(JoinEvent),
     Leave(LeaveEvent),
-    Reaction(ReactionEvent)
+    Reaction(ReactionEvent),
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -14,13 +14,12 @@ pub struct ChatEvent {
     pub user_id: String,
     pub room_id: String,
     pub journey_id: Option<String>,
-    pub timestamp: i64;
-    pub message: String;
-    pub message_type: String;
-    pub chat_type: String;
+    pub timestamp: i64,
+    pub message: String,
+    pub message_type: String,
+    pub chat_type: String,
 }
 
-// Add more events aligned to structure above :)
 #[derive(Debug, Serialize, Deserialize)]
 pub struct JoinEvent {
     pub user_id: String,
@@ -43,4 +42,3 @@ pub struct ReactionEvent {
     pub emoji: String,
     pub timestamp: i64,
 }
-

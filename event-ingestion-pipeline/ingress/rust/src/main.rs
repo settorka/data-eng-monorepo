@@ -16,12 +16,14 @@ async fn main(){
     let app = Router::new()
         .nest("/api/v1", api);
 
-    let address = SocketAddr::from(([0,0,0,0],3000));
+    let addr = SocketAddr::from(([0,0,0,0],3000));
 
     tracing::info!("Listening on {}",addr);
 
-    axum::Server::bind(&addr)
-        .serve(app.into_make_service())
-        .await
-        .unwrap();
+    axum::serve(
+        tokio::net::TcpListener::bind(addr).await.unwrap(),
+        app.into_make_service(),
+    )
+    .await
+    .unwrap();
 }

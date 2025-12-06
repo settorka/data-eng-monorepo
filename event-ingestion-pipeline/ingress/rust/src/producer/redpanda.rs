@@ -1,20 +1,18 @@
 use crate::event::Event;
 use rdkafka::producer::{FutureProducer, FutureRecord};
 use rdkafka::ClientConfig;
-use std::time::Duration;
 use serde_json;
-
+use std::time::Duration;
 
 static TOPIC: &str = "chat-events";
 
-pub async fn produce_to_redpanda(event: Event) -> Result<(),()> {
+pub async fn produce_to_redpanda(event: Event) -> Result<(), ()> {
     let producer: FutureProducer = ClientConfig::new()
-        .set("bootstrap.servers","localhost:9092")
-        .set("message.timeout.ms","5000")
+        .set("bootstrap.servers", "localhost:9092")
+        .set("message.timeout.ms", "5000")
         .create()
         .map_err(|_| ())?;
-    
-    
+
     let payload = serde_json::to_string(&event).map_err(|_| ())?;
 
     let key = match &event {
@@ -24,21 +22,21 @@ pub async fn produce_to_redpanda(event: Event) -> Result<(),()> {
         Event::Reaction(e) => &e.room_id,
     };
 
-    producer
+    let result = producer
         .send(
-            FutureRecord::to(TOPIC)
-                .payload(&payload)
-                .key(key),
+            FutureRecord::to(TOPIC).payload(&payload).key(key),
             Duration::from_secs(0),
         )
-        .await
-        .map(|delivery| {
-            if let Err((e, _)) = delivery {
-                eprintln!("Delivery error: {e}");
-            }
-        })
-        .map_err(|_| ())?;
+        .await;
 
-    Ok(())
-
+    match result {
+        Ok((partition, offset)) => {
+            println!("Delivered to partition {partition}, offset {offset}");
+            Ok(())
+        }
+        Err((err, _msg)) => {
+            eprintln!("Delivery error: {err}");
+            Err(())
+        }
+    }
 }
