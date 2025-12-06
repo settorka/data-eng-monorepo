@@ -10,7 +10,11 @@ use tracing_subscriber;
 async fn main(){
     tracing_subscriber::fmt::init();
 
-    let app = Router::new().route("/ingest", post(ingest_event));
+    let api = Router::new()
+        .route("/chat/ingestion", post(ingest_event));
+
+    let app = Router::new()
+        .nest("/api/v1", api);
 
     let address = SocketAddr::from(([0,0,0,0],3000));
 
