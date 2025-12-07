@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use chrono::Utc;
 use uuid::Uuid;
 
-/// Incoming event types (mirrors your .proto structure)
+/// Incoming event types
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "event_type", rename_all = "snake_case")]
 pub enum Event {
@@ -18,35 +18,51 @@ pub struct ChatEvent {
     pub room_id: String,
     pub journey_id: Option<String>,
     pub timestamp: i64,
-    pub message: String,
-    pub message_type: String,
-    pub chat_type: String,
+    pub message: Option<String>,           
+    pub message_type: Option<String>,      // "standard", "reply"
+    pub chat_type: Option<String>,         // "single", "group", "global"
+    pub message_id: Option<String>,        // if reply
+    pub created_at: Option<i64>,
+    pub updated_at: Option<i64>,
 }
+
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct JoinEvent {
     pub user_id: String,
     pub room_id: String,
+    pub room_action: Option<String>,  // "open" or "join"
     pub timestamp: i64,
+    pub created_at: Option<i64>,
+    pub updated_at: Option<i64>,
 }
+
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct LeaveEvent {
     pub user_id: String,
     pub room_id: String,
+    pub room_action: Option<String>,       // always "leave"
     pub timestamp: i64,
+    pub created_at: Option<i64>,
+    pub updated_at: Option<i64>,
 }
+
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ReactionEvent {
-    pub user_id: String,
+    pub user_id: String,                   // actor
+    pub target_user_id: Option<String>,    // message author
     pub room_id: String,
-    pub message_id: String,
+    pub message_id: String,                // target message
     pub emoji: String,
     pub timestamp: i64,
+    pub created_at: Option<i64>,
+    pub updated_at: Option<i64>,
 }
 
-/// Processed event (what you send back to Redpanda)
+
+// Sent for consumption
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ProcessedEvent {
     pub event_type: String,
@@ -54,11 +70,12 @@ pub struct ProcessedEvent {
     pub room_id: String,
     pub journey_id: Option<String>,
     pub timestamp: i64,
-    pub content: String,
+    pub payload: String,           
     pub metadata_json: String,
     pub event_id: String,
     pub server_timestamp: i64,
 }
+
 
 impl ProcessedEvent {
     pub fn new(
@@ -67,20 +84,19 @@ impl ProcessedEvent {
         room_id: String,
         journey_id: Option<String>,
         timestamp: i64,
-        content: String,
+        payload: String,
         metadata_json: String,
     ) -> Self {
-        let server_timestamp = Utc::now().timestamp_millis();
         Self {
             event_type: event_type.to_string(),
             user_id,
             room_id,
             journey_id,
             timestamp,
-            content,
+            payload,
             metadata_json,
             event_id: Uuid::new_v4().to_string(),
-            server_timestamp,
+            server_timestamp: Utc::now().timestamp_millis(),
         }
     }
 }
