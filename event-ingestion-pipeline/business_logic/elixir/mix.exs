@@ -1,9 +1,9 @@
-defmodule Router.MixProject do
+defmodule BusinessLogic.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :router,
+      app: :business_logic,
       version: "0.1.0",
       elixir: "~> 1.15",
       start_permanent: Mix.env() == :prod,
@@ -14,7 +14,7 @@ defmodule Router.MixProject do
   def application do
     [
       extra_applications: [:logger],
-      mod: {Router.Application, []}
+      mod: {BusinessLogic.Application, []}
     ]
   end
 
@@ -22,8 +22,8 @@ defmodule Router.MixProject do
     [
       {:grpc, "~> 0.7"},
       {:protobuf, "~> 0.12"},
-   
-      {:jason, "~> 1.4"}
+      {:jason, "~> 1.4"},
+      {:uuid, "~> 1.1"} 
     ]
   end
 end

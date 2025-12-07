@@ -1,6 +1,6 @@
-defmodule Router.Application do
+defmodule BusinessLogic.Application do
   @moduledoc """
-  Entry point and supervision tree for the Router service.
+  Entry point and supervision tree for the BusinessLogic service.
   Boots the gRPC server and manages its lifecycle.
   """
 
@@ -10,13 +10,13 @@ defmodule Router.Application do
   @impl true
   def start(_type, _args) do
     port = 50_051
-    Logger.info("Starting Router gRPC server on port #{port}")
+    Logger.info("Starting BusinessLogic gRPC server on port #{port}")
 
     children = [
-      {GRPC.Server.Supervisor, {Router.GRPCServer, port}}
+      {GRPC.Server.Supervisor, {BusinessLogic.GRPCServer, port}}
     ]
 
-    opts = [strategy: :one_for_one, name: Router.Supervisor]
+    opts = [strategy: :one_for_one, name: BusinessLogic.Supervisor]
     Supervisor.start_link(children, opts)
   end
 end

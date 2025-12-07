@@ -1,4 +1,4 @@
-defmodule Router.EventEnricher do
+defmodule BusinessLogic.EventEnricher do
   @moduledoc """
   Adds IDs, server timestamps, and other metadata
   to event fields before they are converted to ProcessedEvent.

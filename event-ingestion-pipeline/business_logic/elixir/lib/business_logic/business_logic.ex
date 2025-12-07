@@ -1,10 +1,10 @@
-defmodule Router.BusinessLogic do
+defmodule BusinessLogic.BusinessLogic do
   @moduledoc """
   Converts any incoming Event (chat, join, leave, reaction)
   into a unified ProcessedEvent ready for Rust to publish to Redpanda.
   """
 
-  alias Router.EventEnricher
+  alias BusinessLogic.EventEnricher
 
   alias Chat.{
     Event,
