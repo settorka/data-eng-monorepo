@@ -6,6 +6,7 @@ use anyhow::{Result, anyhow};
 use tracing::info;
 
 pub async fn publish(event: &ProcessedEvent) -> Result<()> {
+    // Create a producer
     let producer: FutureProducer = ClientConfig::new()
         .set("bootstrap.servers", "localhost:9092")
         .set("message.timeout.ms", "5000")
@@ -15,7 +16,7 @@ pub async fn publish(event: &ProcessedEvent) -> Result<()> {
     let payload = to_string(event)?;
     let topic = "chat_events";
 
-    // Sends with future-based delivery confirmation
+    // Awaiting broker confirmation
     match producer
         .send(
             FutureRecord::to(topic)
@@ -25,16 +26,13 @@ pub async fn publish(event: &ProcessedEvent) -> Result<()> {
         )
         .await
     {
-        Ok(Ok(delivery)) => {
+        Ok((partition, offset)) => {
             info!(
                 "Delivered to topic={} partition={} offset={}",
-                delivery.topic(),
-                delivery.partition(),
-                delivery.offset()
+                topic, partition, offset
             );
             Ok(())
         }
-        Ok(Err((e, _))) => Err(anyhow!("Broker delivery error: {e:?}")),
-        Err(e) => Err(anyhow!("Send timeout or cancellation: {e:?}")),
+        Err((e, _msg)) => Err(anyhow!("Broker delivery error: {e:?}")),
     }
 }

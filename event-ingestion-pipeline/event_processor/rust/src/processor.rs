@@ -1,4 +1,4 @@
-use crate::event::{Event, ChatEvent, JoinEvent, LeaveEvent, ReactionEvent, ProcessedEvent};
+use crate::event::{Event, ProcessedEvent};
 use serde_json::json;
 
 /// Transforms incoming Event and converts it into a ProcessedEvent
