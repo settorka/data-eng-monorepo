@@ -20,10 +20,12 @@ defmodule Router.MixProject do
 
   defp deps do
     [
-      {:grpc, "~> 0.7.0"},           # gRPC server (elixir-grpc)
-      {:protobuf, "~> 0.10.0"},      # Proto message support
-      {:kafka_ex, "~> 0.13.0"},      # Kafka/Redpanda client
-      {:jason, "~> 1.4"}             # JSON serialization
+      {:grpc, "~> 0.7"},
+      {:protobuf, "~> 0.12"},
+      {:broadway, "~> 1.0"},
+      {:broadway_kafka, "~> 0.4"},
+      # JSON
+      {:jason, "~> 1.4"}
     ]
   end
 end

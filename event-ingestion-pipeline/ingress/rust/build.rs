@@ -1,4 +1,7 @@
 fn main() {
-    tonic_build::compile_protos("proto/event.proto")
+    tonic_build::configure()
+        .build_server(false)
+        .build_client(true)
+        .compile(&["../../proto/event.proto"], &["../../proto"])
         .unwrap();
 }
