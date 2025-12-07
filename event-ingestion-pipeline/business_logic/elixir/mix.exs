@@ -22,9 +22,7 @@ defmodule Router.MixProject do
     [
       {:grpc, "~> 0.7"},
       {:protobuf, "~> 0.12"},
-      {:broadway, "~> 1.0"},
-      {:broadway_kafka, "~> 0.4"},
-      # JSON
+   
       {:jason, "~> 1.4"}
     ]
   end
