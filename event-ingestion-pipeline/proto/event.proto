@@ -52,6 +52,8 @@ message ProcessedEvent {
     int64 timestamp = 5;         // from incoming event
     string content = 6;          // message | emoji | ""
     string metadata_json = 7;    // JSON-encoded key-value metadata
+    string event_id = 8;
+    int64 server_timestamp = 9;
 }
 
 service Router {
