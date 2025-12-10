@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
 
 /// Unified event format as emitted by the ingress service.
-/// Each message should be from Redpanda is a ProcessedEvent
+/// Each message should be from Redpanda, 
+/// it's intercepted as ProcessedEvent
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProcessedEvent {
     pub event_type: String,
