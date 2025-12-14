@@ -64,7 +64,7 @@ pub async fn insert_batch(session: &Session, events: &[ProcessedEvent]) -> Resul
             batch.append_statement(query);
         }
 
-        // flattening based on to append-order
+        // flattening based on append-order
         let values: Vec<_> = chunk
             .iter()
             .flat_map(|evt| {

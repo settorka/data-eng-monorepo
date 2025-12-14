@@ -1,0 +1,39 @@
+version: "3.9"
+
+services:
+  redpanda:
+    build: ./infra/redpanda
+    container_name: redpanda
+    ports:
+      - "9092:9092"
+      - "9644:9644"
+
+  scylladb:
+    build: ./infra/scylladb
+    container_name: scylladb
+    ports:
+      - "9042:9042"
+
+  clickhouse:
+    build: ./infra/clickhouse
+    container_name: clickhouse
+    ports:
+      - "8123:8123"
+
+  superset:
+    build: ./infra/superset
+    container_name: superset
+    depends_on:
+      - clickhouse
+    ports:
+      - "8088:8088"
+
+  event_processor:
+    build: ./event_processor/rust
+    container_name: event_processor
+    depends_on:
+      - redpanda
+    ports:
+      - "3000:3000"
+    environment:
+      REDPANDA_BROKER: redpanda:9092
