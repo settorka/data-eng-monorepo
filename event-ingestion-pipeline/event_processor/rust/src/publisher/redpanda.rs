@@ -8,7 +8,7 @@ use tracing::info;
 pub async fn publish(event: &ProcessedEvent) -> Result<()> {
     // Create a producer
     let producer: FutureProducer = ClientConfig::new()
-        .set("bootstrap.servers", "localhost:9092")
+        .set("bootstrap.servers", "redpanda:9092")
         .set("message.timeout.ms", "5000")
         .create()
         .map_err(|e| anyhow!("Failed to create producer: {e}"))?;

@@ -1,4 +1,4 @@
-FROM apache/superset:4.1.0
+FROM apache/superset:latest
 
 ENV SUPERSET_LOAD_EXAMPLES=no
 ENV SUPERSET_SECRET_KEY=supersecretkey

@@ -10,7 +10,7 @@ use crate::{model::ProcessedEvent, database::repository};
 
 pub async fn run(session: Arc<Session>) -> Result<()> {
     let consumer: StreamConsumer = ClientConfig::new()
-        .set("bootstrap.servers", "127.0.0.1:9092")
+        .set("bootstrap.servers", "redpanda:9092")
         .set("group.id", "scylla-persistence-async")
         .set("enable.auto.commit", "false")
         .set("auto.offset.reset", "earliest")

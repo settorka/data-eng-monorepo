@@ -1,8 +1,9 @@
 use anyhow::Result;
-use scylla::{Session, Batch, BatchType};
+use scylla::{Session, prepared_statement::PreparedStatement};
+use scylla::batch::{Batch, BatchType};
 use crate::model::ProcessedEvent;
 
-/// Inserts a single event 
+/// Insert a single processed event
 pub async fn insert_event(session: &Session, evt: &ProcessedEvent) -> Result<()> {
     let query = r#"
         INSERT INTO messages (
@@ -17,9 +18,11 @@ pub async fn insert_event(session: &Session, evt: &ProcessedEvent) -> Result<()>
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     "#;
 
+    let prepared: PreparedStatement = session.prepare(query).await?;
+
     session
         .execute(
-            query,
+            &prepared,
             (
                 &evt.room_id,
                 evt.timestamp,
@@ -36,8 +39,7 @@ pub async fn insert_event(session: &Session, evt: &ProcessedEvent) -> Result<()>
     Ok(())
 }
 
-/// Inserts a batch of events efficiently.
-/// Automatically chunks the input vector for stability.
+/// Insert events in unlogged batches for throughput
 pub async fn insert_batch(session: &Session, events: &[ProcessedEvent]) -> Result<()> {
     if events.is_empty() {
         return Ok(());
@@ -56,28 +58,30 @@ pub async fn insert_batch(session: &Session, events: &[ProcessedEvent]) -> Resul
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     "#;
 
+    let prepared: PreparedStatement = session.prepare(query).await?;
+
     const BATCH_SIZE: usize = 100;
+
     for chunk in events.chunks(BATCH_SIZE) {
         let mut batch = Batch::new(BatchType::Unlogged);
 
         for _ in chunk {
-            batch.append_statement(query);
+            batch.append_statement(prepared.clone());
         }
 
-        // flattening based on append-order
         let values: Vec<_> = chunk
             .iter()
-            .flat_map(|evt| {
-                vec![
-                    evt.room_id.clone().into(),
-                    evt.timestamp.into(),
-                    evt.event_id.clone().into(),
-                    evt.event_type.clone().into(),
-                    evt.user_id.clone().into(),
-                    evt.payload.clone().into(),
-                    evt.metadata_json.clone().into(),
-                    evt.server_timestamp.into(),
-                ]
+            .map(|evt| {
+                (
+                    evt.room_id.as_str(),
+                    evt.timestamp,
+                    evt.event_id.as_str(),
+                    evt.event_type.as_str(),
+                    evt.user_id.as_str(),
+                    evt.payload.as_str(),
+                    evt.metadata_json.as_str(),
+                    evt.server_timestamp,
+                )
             })
             .collect();
 
