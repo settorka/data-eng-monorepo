@@ -64,6 +64,7 @@ services:
       - "3000:3000"
     environment:
       KAFKA_BROKERS: redpanda:9092
+      RUST_LOG: info
 
 volumes:
   scylla_data:
