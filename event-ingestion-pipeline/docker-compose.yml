@@ -1,0 +1,70 @@
+services:
+  db-scylladb:
+    image: scylladb/scylla:6.2
+    container_name: db-scylladb
+    ports:
+      - "9042:9042"
+    command: --overprovisioned 1 --smp 1
+    volumes:
+      - scylla_data:/var/lib/scylla
+
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:latest
+    container_name: redpanda
+    ports:
+      - "9092:9092"
+      - "9644:9644"
+    command:
+      - redpanda
+      - start
+      - --overprovisioned
+      - --smp
+      - "1"
+      - --memory
+      - "1G"
+      - --reserve-memory
+      - "0M"
+      - --check=false
+      - --node-id
+      - "0"
+      - --kafka-addr
+      - "redpanda:9092"
+      - --advertise-kafka-addr
+      - "redpanda:9092"
+
+
+  consumer-scylladb:
+    build:
+      context: ./consumer/persistence/scylladb/rust
+      dockerfile: Dockerfile
+    container_name: consumer-scylladb
+    depends_on:
+      - db-scylladb
+      - redpanda
+    environment:
+      SCYLLA_HOST: db-scylladb
+      KAFKA_BROKERS: redpanda:9092
+
+  analytics-superset:
+    build:
+      context: ./infra/superset
+      dockerfile: Dockerfile
+    container_name: analytics-superset
+    ports:
+      - "8088:8088"
+
+  api-event-processor:
+    build:
+      context: ./event_processor
+      dockerfile: Dockerfile
+    container_name: api-event-processor
+    depends_on:
+      - redpanda
+    ports:
+      - "3000:3000"
+    environment:
+      KAFKA_BROKERS: redpanda:9092
+      RUST_LOG: info
+
+volumes:
+  scylla_data:

@@ -7,15 +7,18 @@ pub fn process_event(event: Event) -> ProcessedEvent {
         Event::Chat(e) => {
             let metadata = json!({
                 "message_type": e.message_type,
-                "chat_type": e.chat_type
-            }).to_string();
+                "chat_type": e.chat_type,
+                "message_id": e.message_id,
+            })
+            .to_string();
+
             ProcessedEvent::new(
                 "chat",
                 e.user_id,
                 e.room_id,
                 e.journey_id,
                 e.timestamp,
-                e.message,
+                e.message.unwrap_or_default(),   // FIX HERE
                 metadata,
             )
         }
@@ -46,15 +49,18 @@ pub fn process_event(event: Event) -> ProcessedEvent {
 
         Event::Reaction(e) => {
             let metadata = json!({
-                "message_id": e.message_id
-            }).to_string();
+                "message_id": e.message_id,
+                "target_user_id": e.target_user_id
+            })
+            .to_string();
+
             ProcessedEvent::new(
                 "reaction",
                 e.user_id,
                 e.room_id,
                 None,
                 e.timestamp,
-                e.emoji,
+                e.emoji,     // already String
                 metadata,
             )
         }
