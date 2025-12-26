@@ -12,16 +12,13 @@ warnings.filterwarnings('ignore')
 plt.style.use('seaborn-v0_8-darkgrid')
 sns.set_palette("husl")
 
-# ============================================
-# 1. GET REAL APPLE OHLCV DATA
-# ============================================
+
+
 print("Fetching APPLE OHLCV data...")
 ticker = "AAPL"
 
-# Get 2 years of daily data - FIXED VERSION
 APPLE = yf.download(ticker, start="2022-01-01", end="2024-01-01", progress=False)
 
-# Check if columns are MultiIndex and flatten if needed
 if isinstance(APPLE.columns, pd.MultiIndex):
     APPLE.columns = APPLE.columns.get_level_values(0)
 
@@ -30,14 +27,12 @@ print(f"Date range: {APPLE.index[0].date()} to {APPLE.index[-1].date()}")
 print("\nFirst few rows:")
 print(APPLE[['Open', 'High', 'Low', 'Close', 'Volume']].head())
 
-# ============================================
-# 2. COMPUTE RETURNS FROM CLOSE PRICES
-# ============================================
+
+
 # Log returns are better for volatility modeling
 APPLE['Log_Returns'] = np.log(APPLE['Close'] / APPLE['Close'].shift(1))
 APPLE = APPLE.dropna()
 
-# Also compute Parkinson volatility (High-Low estimator) for comparison
 APPLE['HL_Range'] = np.log(APPLE['High'] / APPLE['Low'])
 APPLE['Parkinson_Vol'] = (1/(4*np.log(2))) * (APPLE['HL_Range']**2)
 
@@ -49,30 +44,25 @@ print(f"Kurtosis: {APPLE['Log_Returns'].kurtosis():.4f}")
 print(f"Min return: {APPLE['Log_Returns'].min():.6f}")
 print(f"Max return: {APPLE['Log_Returns'].max():.6f}")
 
-# ============================================
-# 3. GARCH MODELING
-# ============================================
+
+
 print("\n" + "="*50)
 print("GARCH(1,1) MODEL FITTING")
 print("="*50)
 
-# Fit GARCH(1,1) model
 garch = arch_model(APPLE['Log_Returns'] * 100, vol='Garch', p=1, q=1, dist='normal')
 garch_fit = garch.fit(update_freq=5, disp='off')
 
 print(garch_fit.summary())
 
-# Get conditional volatility from GARCH
 APPLE['GARCH_Volatility'] = garch_fit.conditional_volatility / 100  # Convert back from percentage
 
-# ============================================
-# 4. EGARCH MODELING (with better settings)
-# ============================================
+
+
 print("\n" + "="*50)
 print("EGARCH(1,1) MODEL FITTING")
 print("="*50)
 
-# Try with different distributions and optimizer settings
 distributions = ['normal', 'ged', 't']
 egarch_success = False
 
@@ -81,14 +71,12 @@ for dist in distributions:
         print(f"Trying EGARCH with {dist.upper()} distribution...")
         egarch = arch_model(APPLE['Log_Returns'] * 100, vol='EGARCH', p=1, q=1, o=1, dist=dist)
         
-        # Use more robust optimization
         egarch_fit = egarch.fit(update_freq=5, disp='off', show_warning=False,
                                options={'maxiter': 1000, 'ftol': 1e-10})
         
         print(f"Success with {dist.upper()} distribution!")
         print(egarch_fit.summary())
         
-        # Get conditional volatility from EGARCH
         APPLE['EGARCH_Volatility'] = egarch_fit.conditional_volatility / 100
         egarch_success = True
         break
@@ -101,23 +89,19 @@ if not egarch_success:
     print("\nAll EGARCH specifications failed. Using GARCH volatility as proxy.")
     APPLE['EGARCH_Volatility'] = APPLE['GARCH_Volatility']
 
-# ============================================
-# 5. DISPERSION ANALYSIS
-# ============================================
+
+
 print("\n" + "="*50)
 print("VOLATILITY DISPERSION ANALYSIS")
 print("="*50)
 
-# Compute rolling statistics of volatility
-window = 20  # 1 month trading window
+window = 20  
 
-# Rolling statistics for GARCH volatility
 APPLE['GARCH_Vol_MA'] = APPLE['GARCH_Volatility'].rolling(window=window).mean()
 APPLE['GARCH_Vol_Std'] = APPLE['GARCH_Volatility'].rolling(window=window).std()
 APPLE['GARCH_Vol_Skew'] = APPLE['GARCH_Volatility'].rolling(window=window).apply(lambda x: stats.skew(x))
 APPLE['GARCH_Vol_Dispersion'] = APPLE['GARCH_Vol_Std'] / APPLE['GARCH_Vol_MA']  # Coefficient of variation
 
-# Same for EGARCH
 APPLE['EGARCH_Vol_Std'] = APPLE['EGARCH_Volatility'].rolling(window=window).std()
 APPLE['EGARCH_Vol_Dispersion'] = APPLE['EGARCH_Vol_Std'] / APPLE['EGARCH_Volatility'].rolling(window=window).mean()
 
@@ -127,21 +111,17 @@ print(f"GARCH Volatility Std Dev: {APPLE['GARCH_Volatility'].std():.6f}")
 print(f"GARCH Volatility CV (Dispersion): {APPLE['GARCH_Volatility'].std()/APPLE['GARCH_Volatility'].mean():.4f}")
 print(f"EGARCH Volatility CV (Dispersion): {APPLE['EGARCH_Volatility'].std()/APPLE['EGARCH_Volatility'].mean():.4f}")
 
-# ============================================
-# 6. REGIME DETECTION (High/Low Volatility)
-# ============================================
-# Identify volatility regimes
-vol_threshold = APPLE['GARCH_Volatility'].quantile(0.75)  # Top 25% as high vol
+
+
+vol_threshold = APPLE['GARCH_Volatility'].quantile(0.75)  
 APPLE['Vol_Regime'] = np.where(APPLE['GARCH_Volatility'] > vol_threshold, 'High Vol', 'Low Vol')
 
-# Statistics by regime
 regime_stats = APPLE.groupby('Vol_Regime')['Log_Returns'].agg(['mean', 'std', 'count'])
 print("\n=== RETURN STATISTICS BY VOLATILITY REGIME ===")
 print(regime_stats)
 
-# ============================================
-# 7. VISUALIZATION
-# ============================================
+
+
 fig, axes = plt.subplots(4, 2, figsize=(15, 18))
 fig.suptitle(f'APPLE ({ticker}) Volatility Analysis with GARCH/EGARCH Models', fontsize=16, y=1.02)
 
@@ -213,9 +193,8 @@ plt.colorbar(scatter, ax=axes[3, 1], label='Return')
 plt.tight_layout()
 plt.show()
 
-# ============================================
-# 8. KEY INSIGHTS SUMMARY
-# ============================================
+
+
 print("\n" + "="*50)
 print("KEY INSIGHTS SUMMARY")
 print("="*50)
