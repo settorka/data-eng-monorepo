@@ -1,5 +1,0 @@
-tower_http::trace::Trace<Router<_, _>, SharedClassifier<ServerErrorsAsFailures>>
-tower_http::trace::Trace<Router<_, _>, SharedClassifier<ServerErrorsAsFailures>>: Service<axum::http::Request<Body>>
-tower_http::trace::Trace<S, M, MakeSpanT, OnRequestT, OnResponseT, OnBodyChunkT, OnEosT, OnFailureT>
-Shared<tower_http::trace::Trace<Router<_, _>, SharedClassifier<ServerErrorsAsFailures>>>
-hyper::service::make::MakeServiceRef<hyper::server::tcp::addr_stream::AddrStream, Body>

@@ -1,2 +1,0 @@
-tower_http::trace::Trace<Route<_>, SharedClassifier<ServerErrorsAsFailures>>: tower_service::Service<axum::http::Request<_>>
-tower_http::trace::Trace<S, M, MakeSpanT, OnRequestT, OnResponseT, OnBodyChunkT, OnEosT, OnFailureT>
