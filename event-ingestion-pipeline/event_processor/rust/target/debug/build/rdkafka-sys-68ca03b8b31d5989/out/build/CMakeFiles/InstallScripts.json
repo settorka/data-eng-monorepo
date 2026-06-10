@@ -1,0 +1,9 @@
+{
+	"InstallScripts" : 
+	[
+		"/Users/settoramediku/Documents/Github/data-eng-monorepo/event-ingestion-pipeline/event_processor/rust/target/debug/build/rdkafka-sys-68ca03b8b31d5989/out/build/cmake_install.cmake",
+		"/Users/settoramediku/Documents/Github/data-eng-monorepo/event-ingestion-pipeline/event_processor/rust/target/debug/build/rdkafka-sys-68ca03b8b31d5989/out/build/src/cmake_install.cmake",
+		"/Users/settoramediku/Documents/Github/data-eng-monorepo/event-ingestion-pipeline/event_processor/rust/target/debug/build/rdkafka-sys-68ca03b8b31d5989/out/build/src-cpp/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

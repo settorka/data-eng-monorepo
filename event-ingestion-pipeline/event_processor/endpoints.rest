@@ -1,0 +1,52 @@
+### Chat Event
+POST http://localhost:3000/api/v1/chat/ingestion
+Content-Type: application/json
+
+{
+  "event_type": "chat",
+  "user_id": "user_123",
+  "room_id": "room_456",
+  "journey_id": "journey_999",
+  "timestamp": 1733490000,
+  "message": "Hello world",
+  "message_type": "text",
+  "chat_type": "group"
+}
+
+
+### Join Event
+POST http://localhost:3000/api/v1/chat/ingestion
+Content-Type: application/json
+
+{
+  "event_type": "join",
+  "user_id": "user_123",
+  "room_id": "room_456",
+  "timestamp": 1733490000
+}
+
+
+### Leave Event
+POST http://localhost:3000/api/v1/chat/ingestion
+Content-Type: application/json
+
+{
+  "event_type": "leave",
+  "user_id": "user_123",
+  "room_id": "room_456",
+  "timestamp": 1733490000
+}
+
+
+### Reaction Event
+POST http://localhost:3000/api/v1/chat/ingestion
+Content-Type: application/json
+
+{
+  "event_type": "reaction",
+  "user_id": "user_123",
+  "room_id": "room_456",
+  "message_id": "msg_777",
+  "emoji": "thumbs_up",
+  "timestamp": 1733490000
+}

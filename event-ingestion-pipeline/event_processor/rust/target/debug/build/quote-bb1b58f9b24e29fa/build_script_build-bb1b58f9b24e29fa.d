@@ -1,0 +1,5 @@
+/Users/settoramediku/Documents/Github/data-eng-monorepo/event-ingestion-pipeline/event_processor/rust/target/debug/build/quote-bb1b58f9b24e29fa/build_script_build-bb1b58f9b24e29fa.d: /Users/settoramediku/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.42/build.rs
+
+/Users/settoramediku/Documents/Github/data-eng-monorepo/event-ingestion-pipeline/event_processor/rust/target/debug/build/quote-bb1b58f9b24e29fa/build_script_build-bb1b58f9b24e29fa: /Users/settoramediku/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.42/build.rs
+
+/Users/settoramediku/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.42/build.rs:
