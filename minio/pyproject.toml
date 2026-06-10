@@ -1,0 +1,6 @@
+[project]
+name = "minio-bucket-cli"
+version = "0.1.0"
+description = "MinIO bucket manager CLI"
+requires-python = ">=3.8"
+dependencies = ["minio", "python-dotenv"]

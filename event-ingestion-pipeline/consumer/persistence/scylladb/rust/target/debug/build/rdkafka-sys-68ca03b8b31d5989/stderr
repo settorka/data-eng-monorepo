@@ -1,0 +1,112 @@
+Building and linking librdkafka statically
+CMake Deprecation Warning at CMakeLists.txt:1 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+
+CMake Warning:
+  Manually-specified variables were not used by the project:
+
+    CMAKE_ASM_COMPILER
+    CMAKE_ASM_FLAGS
+
+
+/Users/settoramediku/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rdkafka-sys-4.9.0+2.10.0/librdkafka/src/rdkafka_request.c:3368:29: warning: format specifies type 'long' but the argument has type 'int64_t' (aka 'long long') [-Wformat]
+ 3367 |                             "Received session lifetime %ld ms from broker",
+      |                                                        ~~~
+      |                                                        %lld
+ 3368 |                             session_lifetime_ms);
+      |                             ^~~~~~~~~~~~~~~~~~~
+/Users/settoramediku/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rdkafka-sys-4.9.0+2.10.0/librdkafka/src/rdkafka_int.h:1031:66: note: expanded from macro 'rd_kafka_dbg'
+ 1031 |                                       (RD_KAFKA_DBG_##ctx), fac, __VA_ARGS__); \
+      |                                                                  ^~~~~~~~~~~
+1 warning generated.
+/Users/settoramediku/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rdkafka-sys-4.9.0+2.10.0/librdkafka/src/rdkafka_telemetry_decode.c:898:13: warning: implicit conversion from enumeration type 'rd_kafka_telemetry_consumer_metric_name_t' to different enumeration type 'rd_kafka_telemetry_producer_metric_name_t' [-Wenum-conversion]
+  896 |         fails += unit_test_telemetry(
+      |                  ~~~~~~~~~~~~~~~~~~~
+  897 |             RD_KAFKA_CONSUMER,
+  898 |             RD_KAFKA_TELEMETRY_METRIC_CONSUMER_CONNECTION_CREATION_RATE,
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/settoramediku/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rdkafka-sys-4.9.0+2.10.0/librdkafka/src/rdkafka_telemetry_decode.c:907:13: warning: implicit conversion from enumeration type 'rd_kafka_telemetry_consumer_metric_name_t' to different enumeration type 'rd_kafka_telemetry_producer_metric_name_t' [-Wenum-conversion]
+  905 |         fails += unit_test_telemetry(
+      |                  ~~~~~~~~~~~~~~~~~~~
+  906 |             RD_KAFKA_CONSUMER,
+  907 |             RD_KAFKA_TELEMETRY_METRIC_CONSUMER_NODE_REQUEST_LATENCY_AVG,
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/settoramediku/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rdkafka-sys-4.9.0+2.10.0/librdkafka/src/rdkafka_telemetry_decode.c:916:13: warning: implicit conversion from enumeration type 'rd_kafka_telemetry_consumer_metric_name_t' to different enumeration type 'rd_kafka_telemetry_producer_metric_name_t' [-Wenum-conversion]
+  914 |         fails += unit_test_telemetry(
+      |                  ~~~~~~~~~~~~~~~~~~~
+  915 |             RD_KAFKA_CONSUMER,
+  916 |             RD_KAFKA_TELEMETRY_METRIC_CONSUMER_NODE_REQUEST_LATENCY_MAX,
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/settoramediku/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rdkafka-sys-4.9.0+2.10.0/librdkafka/src/rdkafka_telemetry_decode.c:925:13: warning: implicit conversion from enumeration type 'rd_kafka_telemetry_consumer_metric_name_t' to different enumeration type 'rd_kafka_telemetry_producer_metric_name_t' [-Wenum-conversion]
+  923 |         fails += unit_test_telemetry(
+      |                  ~~~~~~~~~~~~~~~~~~~
+  924 |             RD_KAFKA_CONSUMER,
+  925 |             RD_KAFKA_TELEMETRY_METRIC_CONSUMER_COORDINATOR_ASSIGNED_PARTITIONS,
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/settoramediku/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rdkafka-sys-4.9.0+2.10.0/librdkafka/src/rdkafka_telemetry_decode.c:934:13: warning: implicit conversion from enumeration type 'rd_kafka_telemetry_consumer_metric_name_t' to different enumeration type 'rd_kafka_telemetry_producer_metric_name_t' [-Wenum-conversion]
+  932 |         fails += unit_test_telemetry(
+      |                  ~~~~~~~~~~~~~~~~~~~
+  933 |             RD_KAFKA_CONSUMER,
+  934 |             RD_KAFKA_TELEMETRY_METRIC_CONSUMER_COORDINATOR_REBALANCE_LATENCY_AVG,
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/settoramediku/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rdkafka-sys-4.9.0+2.10.0/librdkafka/src/rdkafka_telemetry_decode.c:944:13: warning: implicit conversion from enumeration type 'rd_kafka_telemetry_consumer_metric_name_t' to different enumeration type 'rd_kafka_telemetry_producer_metric_name_t' [-Wenum-conversion]
+  942 |         fails += unit_test_telemetry(
+      |                  ~~~~~~~~~~~~~~~~~~~
+  943 |             RD_KAFKA_CONSUMER,
+  944 |             RD_KAFKA_TELEMETRY_METRIC_CONSUMER_COORDINATOR_REBALANCE_LATENCY_MAX,
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/settoramediku/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rdkafka-sys-4.9.0+2.10.0/librdkafka/src/rdkafka_telemetry_decode.c:954:13: warning: implicit conversion from enumeration type 'rd_kafka_telemetry_consumer_metric_name_t' to different enumeration type 'rd_kafka_telemetry_producer_metric_name_t' [-Wenum-conversion]
+  952 |         fails += unit_test_telemetry(
+      |                  ~~~~~~~~~~~~~~~~~~~
+  953 |             RD_KAFKA_CONSUMER,
+  954 |             RD_KAFKA_TELEMETRY_METRIC_CONSUMER_FETCH_MANAGER_FETCH_LATENCY_AVG,
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/settoramediku/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rdkafka-sys-4.9.0+2.10.0/librdkafka/src/rdkafka_telemetry_decode.c:963:13: warning: implicit conversion from enumeration type 'rd_kafka_telemetry_consumer_metric_name_t' to different enumeration type 'rd_kafka_telemetry_producer_metric_name_t' [-Wenum-conversion]
+  961 |         fails += unit_test_telemetry(
+      |                  ~~~~~~~~~~~~~~~~~~~
+  962 |             RD_KAFKA_CONSUMER,
+  963 |             RD_KAFKA_TELEMETRY_METRIC_CONSUMER_FETCH_MANAGER_FETCH_LATENCY_MAX,
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/settoramediku/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rdkafka-sys-4.9.0+2.10.0/librdkafka/src/rdkafka_telemetry_decode.c:972:13: warning: implicit conversion from enumeration type 'rd_kafka_telemetry_consumer_metric_name_t' to different enumeration type 'rd_kafka_telemetry_producer_metric_name_t' [-Wenum-conversion]
+  970 |         fails += unit_test_telemetry(
+      |                  ~~~~~~~~~~~~~~~~~~~
+  971 |             RD_KAFKA_CONSUMER,
+  972 |             RD_KAFKA_TELEMETRY_METRIC_CONSUMER_POLL_IDLE_RATIO_AVG,
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/settoramediku/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rdkafka-sys-4.9.0+2.10.0/librdkafka/src/rdkafka_telemetry_decode.c:980:13: warning: implicit conversion from enumeration type 'rd_kafka_telemetry_consumer_metric_name_t' to different enumeration type 'rd_kafka_telemetry_producer_metric_name_t' [-Wenum-conversion]
+  978 |         fails += unit_test_telemetry(
+      |                  ~~~~~~~~~~~~~~~~~~~
+  979 |             RD_KAFKA_CONSUMER,
+  980 |             RD_KAFKA_TELEMETRY_METRIC_CONSUMER_COORDINATOR_COMMIT_LATENCY_AVG,
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/settoramediku/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rdkafka-sys-4.9.0+2.10.0/librdkafka/src/rdkafka_telemetry_decode.c:989:13: warning: implicit conversion from enumeration type 'rd_kafka_telemetry_consumer_metric_name_t' to different enumeration type 'rd_kafka_telemetry_producer_metric_name_t' [-Wenum-conversion]
+  987 |         fails += unit_test_telemetry(
+      |                  ~~~~~~~~~~~~~~~~~~~
+  988 |             RD_KAFKA_CONSUMER,
+  989 |             RD_KAFKA_TELEMETRY_METRIC_CONSUMER_COORDINATOR_COMMIT_LATENCY_MAX,
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/settoramediku/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rdkafka-sys-4.9.0+2.10.0/librdkafka/src/rdkafka_telemetry_decode.c:1018:13: warning: implicit conversion from enumeration type 'rd_kafka_telemetry_consumer_metric_name_t' to different enumeration type 'rd_kafka_telemetry_producer_metric_name_t' [-Wenum-conversion]
+ 1016 |         fails += unit_test_telemetry(
+      |                  ~~~~~~~~~~~~~~~~~~~
+ 1017 |             RD_KAFKA_CONSUMER,
+ 1018 |             RD_KAFKA_TELEMETRY_METRIC_CONSUMER_CONNECTION_CREATION_TOTAL,
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/settoramediku/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rdkafka-sys-4.9.0+2.10.0/librdkafka/src/rdkafka_telemetry_decode.c:1028:13: warning: implicit conversion from enumeration type 'rd_kafka_telemetry_consumer_metric_name_t' to different enumeration type 'rd_kafka_telemetry_producer_metric_name_t' [-Wenum-conversion]
+ 1026 |         fails += unit_test_telemetry(
+      |                  ~~~~~~~~~~~~~~~~~~~
+ 1027 |             RD_KAFKA_CONSUMER,
+ 1028 |             RD_KAFKA_TELEMETRY_METRIC_CONSUMER_CONNECTION_CREATION_TOTAL,
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/settoramediku/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rdkafka-sys-4.9.0+2.10.0/librdkafka/src/rdkafka_telemetry_decode.c:1037:13: warning: implicit conversion from enumeration type 'rd_kafka_telemetry_consumer_metric_name_t' to different enumeration type 'rd_kafka_telemetry_producer_metric_name_t' [-Wenum-conversion]
+ 1035 |         fails += unit_test_telemetry(
+      |                  ~~~~~~~~~~~~~~~~~~~
+ 1036 |             RD_KAFKA_CONSUMER,
+ 1037 |             RD_KAFKA_TELEMETRY_METRIC_CONSUMER_COORDINATOR_REBALANCE_LATENCY_TOTAL,
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+14 warnings generated.

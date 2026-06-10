@@ -1,0 +1,41 @@
+# Main chat messages (append-only)
+CREATE TABLE messages (
+    room_id     text,
+    timestamp   bigint,
+    event_id    uuid,
+    event_type  text,
+    user_id     text,
+    message     text,
+    message_id  text,
+    emoji       text,
+    created_at  bigint,
+    updated_at  bigint,
+    PRIMARY KEY ((room_id), timestamp, event_id)
+) WITH CLUSTERING ORDER BY (timestamp ASC);
+
+# Room metadata (name, type, etc.; not for members)
+CREATE TABLE rooms (
+    room_id     text PRIMARY KEY,
+    name        text,
+    room_type   text,   # "group", "single", "global"
+    created_at  bigint,
+    updated_at  bigint
+);
+
+# Scalable group membership mapping (for large groups)
+CREATE TABLE group_members (
+    room_id     text,
+    user_id     text,
+    joined_at   bigint,
+    updated_at  bigint,
+    PRIMARY KEY (room_id, user_id)
+);
+
+# (Optional) => rooms a user is in (inbox, notifications)
+CREATE TABLE user_rooms (
+    user_id     text,
+    room_id     text,
+    joined_at   bigint,
+    updated_at  bigint,
+    PRIMARY KEY (user_id, room_id)
+);
