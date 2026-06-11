@@ -14,7 +14,7 @@ COPY tests ./tests
 
 RUN cargo build --release --bin ingress
 
-FROM debian:bookworm-slim
+FROM debian:trixie-slim
 WORKDIR /app
 COPY --from=builder /app/target/release/ingress /app/ingress
 

@@ -1,0 +1,61 @@
+### Health check (liveness)
+GET http://localhost:3000/healthz
+
+
+### Readiness check
+GET http://localhost:3000/readyz
+
+
+### Valid ingestion request
+POST http://localhost:3000/api/v1/chat/ingestion
+Content-Type: application/json
+
+{
+  "event_type": "chat",
+  "user_id": "user_1",
+  "room_id": "room_1",
+  "payload": {
+    "message": "hello world"
+  },
+  "producer_timestamp": 1700000000000
+}
+
+
+### Missing field (invalid request → 422)
+POST http://localhost:3000/api/v1/chat/ingestion
+Content-Type: application/json
+
+{
+  "event_type": "",
+  "user_id": "user_1",
+  "room_id": "room_1",
+  "payload": {
+    "message": "invalid"
+  }
+}
+
+
+### Invalid payload type (not object → 422)
+POST http://localhost:3000/api/v1/chat/ingestion
+Content-Type: application/json
+
+{
+  "event_type": "chat",
+  "user_id": "user_1",
+  "room_id": "room_1",
+  "payload": "this should be an object"
+}
+
+
+### Burst test (manual repeat)
+POST http://localhost:3000/api/v1/chat/ingestion
+Content-Type: application/json
+
+{
+  "event_type": "chat",
+  "user_id": "user_{{$randomInt}}",
+  "room_id": "room_hot",
+  "payload": {
+    "message": "burst traffic test"
+  }
+}
