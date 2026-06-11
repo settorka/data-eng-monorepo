@@ -28,14 +28,33 @@ services:
     ports:
       - "9042:9042"
 
+  # Ensures schema exists before consumers start
+  scylla-init:
+    image: scylladb/scylla:6.2
+    depends_on:
+      - scylladb
+    volumes:
+      - ../../schema/scylla:/schema
+    entrypoint: ["/bin/bash", "/schema/init.sh"]
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    volumes:
+      - ../../schema/clickhouse:/docker-entrypoint-initdb.d
+    environment:
+      CLICKHOUSE_DB: events
+
   ingress:
     build:
       context: ../..
       dockerfile: deploy/local/docker/ingress.Dockerfile
     environment:
-      BIND_ADDR: 0.0.0.0:3000
-      KAFKA_BROKERS: redpanda:9092
-      KAFKA_TOPIC: chat_events
+      BIND_ADDR: ${BIND_ADDR}
+      KAFKA_BROKERS: ${KAFKA_BROKERS}
+      KAFKA_TOPIC: ${KAFKA_TOPIC}
     ports:
       - "3000:3000"
     depends_on:
@@ -46,11 +65,24 @@ services:
       context: ../..
       dockerfile: deploy/local/docker/persistence_consumer.Dockerfile
     environment:
-      KAFKA_BROKERS: redpanda:9092
-      KAFKA_TOPIC: chat_events
-      KAFKA_CONSUMER_GROUP: chat-events-v1
-      SCYLLA_HOST: scylladb:9042
+      KAFKA_BROKERS: ${KAFKA_BROKERS}
+      KAFKA_TOPIC: ${KAFKA_TOPIC}
+      KAFKA_CONSUMER_GROUP: ${KAFKA_CONSUMER_GROUP}
+      SCYLLA_HOST: ${SCYLLA_HOST}
     depends_on:
       - redpanda
       - scylladb
+      - scylla-init
 
+  clickhouse-consumer:
+    build:
+      context: ../..
+      dockerfile: deploy/local/docker/clickhouse_consumer.Dockerfile
+    environment:
+      KAFKA_BROKERS: ${KAFKA_BROKERS}
+      KAFKA_TOPIC: ${KAFKA_TOPIC}
+      CLICKHOUSE_URL: ${CLICKHOUSE_URL}
+      CLICKHOUSE_DB: ${CLICKHOUSE_DB}
+    depends_on:
+      - redpanda
+      - clickhouse

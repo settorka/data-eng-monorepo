@@ -6,7 +6,7 @@ use event_ingestion_pipeline_v1::{
     ingress::routes::{self, AppState},
     kafka::producer::Publisher,
     observability::{
-        health::{HealthState, Readiness},
+        health::HealthState,
         metrics,
     },
 };
@@ -17,18 +17,21 @@ use tracing_subscriber::EnvFilter;
 async fn main() -> Result<()> {
     let settings = Settings::from_env()?;
 
+    // Initialize structured logging early for full visibility
     tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::from_default_env())
         .init();
 
+    // Initialize metrics (no-op now, future exporter hook)
     metrics::init();
 
     let publisher = Publisher::new(&settings)?;
+
     let app = routes::router(AppState {
         settings: settings.clone(),
-        health: HealthState::new(Readiness::Ready),
+        health: Arc::new(HealthState::new()), // shared, thread-safe health state
         publisher,
-        in_flight: Arc::new(Semaphore::new(settings.max_in_flight_requests)),
+        in_flight: Arc::new(Semaphore::new(settings.max_in_flight_requests)), // bounds concurrency
     });
 
     axum::Server::bind(&settings.bind_addr)

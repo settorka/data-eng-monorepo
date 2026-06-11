@@ -4,7 +4,7 @@ Production-aware spec for a bounded stochastic state machine that converts incom
 
 ## Scope
 
-`v0` is the current implementation baseline: HTTP ingest, Redpanda publish, Scylla consume/persist.
+`v0` is the current implementation baseline: HTTP ingest, Redpanda publish, Scylla and Clickhouse consume/persist.
 
 `v1` evolves `v0` into a production-aware system by adding:
 - explicit correctness contracts
