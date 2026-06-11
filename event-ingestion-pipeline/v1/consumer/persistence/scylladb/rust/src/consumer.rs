@@ -6,28 +6,29 @@ use scylla::Session;
 use serde_json;
 use std::sync::Arc;
 use tokio::{sync::mpsc, time::{self, Duration}};
-use crate::{model::ProcessedEvent, database::repository};
+use crate::{config::Settings, model::ProcessedEvent, database::repository};
 
-pub async fn run(session: Arc<Session>) -> Result<()> {
+pub async fn run(session: Arc<Session>, settings: Settings) -> Result<()> {
     let consumer: StreamConsumer = ClientConfig::new()
-        .set("bootstrap.servers", "redpanda:9092")
-        .set("group.id", "scylla-persistence-async")
+        .set("bootstrap.servers", &settings.kafka_brokers)
+        .set("group.id", &settings.consumer_group)
         .set("enable.auto.commit", "false")
         .set("auto.offset.reset", "earliest")
         .create()?;
 
-    consumer.subscribe(&["chat_events"])?;
-    tracing::info!("Subscribed to Redpanda topic: chat_events");
+    consumer.subscribe(&[&settings.kafka_topic])?;
+    tracing::info!(topic = %settings.kafka_topic, "Subscribed to Redpanda topic");
 
     // bounded channel to prevent unbounded memory growth (adapted from go channels)
-    let (tx, mut rx) = mpsc::channel::<ProcessedEvent>(10_000);
+    let (tx, mut rx) = mpsc::channel::<ProcessedEvent>(settings.queue_capacity);
 
     // Spawns background writer
     let writer_session = session.clone();
+    let batch_size = settings.batch_size;
+    let flush_interval_ms = settings.flush_interval_ms;
     tokio::spawn(async move {
         let mut buffer: Vec<ProcessedEvent> = Vec::new();
-        let mut flush_timer = time::interval(Duration::from_millis(2000));
-        const BATCH_SIZE: usize = 500;
+        let mut flush_timer = time::interval(Duration::from_millis(flush_interval_ms));
 
         loop {
             tokio::select! {
@@ -43,7 +44,7 @@ pub async fn run(session: Arc<Session>) -> Result<()> {
                 }
                 Some(event) = rx.recv() => {
                     buffer.push(event);
-                    if buffer.len() >= BATCH_SIZE {
+                    if buffer.len() >= batch_size {
                         if let Err(e) = repository::insert_batch(&writer_session, &buffer).await {
                             tracing::error!("Batch insert failed: {:?}", e);
                         } else {

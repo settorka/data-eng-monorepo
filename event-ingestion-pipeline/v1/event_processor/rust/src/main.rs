@@ -2,6 +2,7 @@ mod event;
 mod processor;
 mod publisher;
 mod api;
+mod config;
 
 use axum::{
     http::Request,
@@ -9,11 +10,13 @@ use axum::{
     response::Response,
     Router, routing::post,
 };
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 use tokio::sync::Mutex;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
 use std::time::Instant;
+use tower::timeout::TimeoutLayer;
+use tower_http::limit::RequestBodyLimitLayer;
 
 /// Logging middleware: logs method, path, status and latency
 async fn request_logger<B>(req: Request<B>, next: Next<B>) -> Response {
@@ -39,6 +42,8 @@ async fn request_logger<B>(req: Request<B>, next: Next<B>) -> Response {
 
 #[tokio::main]
 async fn main() {
+    let settings = config::Settings::from_env().expect("invalid configuration");
+
     tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::from_default_env())
         .init();
@@ -48,15 +53,24 @@ async fn main() {
     let api = Router::new()
         .route("/chat/ingestion", post(api::ingest_event))
         .layer(axum::middleware::from_fn(request_logger))
+        .layer(RequestBodyLimitLayer::new(settings.max_request_body_bytes))
+        .layer(TimeoutLayer::new(Duration::from_millis(settings.request_timeout_ms)))
         .with_state(publish_source);
 
     let app = Router::new()
         .nest("/api/v1", api);
 
-    let addr = std::net::SocketAddr::from(([0, 0, 0, 0], 3000));
-    tracing::info!("API listening on {}", addr);
+    tracing::info!(
+        bind_addr = %settings.bind_addr,
+        kafka_brokers = %settings.kafka_brokers,
+        kafka_topic = %settings.topic,
+        publish_timeout_ms = settings.publish_timeout_ms,
+        request_timeout_ms = settings.request_timeout_ms,
+        max_request_body_bytes = settings.max_request_body_bytes,
+        "event processor configuration loaded"
+    );
 
-    axum::Server::bind(&addr)
+    axum::Server::bind(&settings.bind_addr)
         .serve(app.into_make_service())
         .await
         .unwrap();

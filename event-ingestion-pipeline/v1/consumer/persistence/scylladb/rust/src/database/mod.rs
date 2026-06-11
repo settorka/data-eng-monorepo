@@ -1,11 +1,13 @@
 use anyhow::Result;
 use scylla::{Session, SessionBuilder};
 
+use crate::config::Settings;
+
 /// Initialise a ScyllaDB session.
 /// TODO: support multiple nodes (might go into a load balancer)
-pub async fn init_session() -> Result<Session> {
+pub async fn init_session(settings: &Settings) -> Result<Session> {
     let session = SessionBuilder::new()
-        .known_node("127.0.0.1:9042") 
+        .known_node(&settings.scylla_host)
         .build()
         .await?;
 
