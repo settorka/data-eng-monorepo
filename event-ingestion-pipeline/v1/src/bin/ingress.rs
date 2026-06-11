@@ -1,5 +1,14 @@
+use std::sync::Arc;
+
 use anyhow::Result;
-use event_ingestion_pipeline_v1::{config::Settings, http, metrics};
+use event_ingestion_pipeline_v1::{
+    config::Settings,
+    health::{HealthState, Readiness},
+    http::{self, AppState},
+    metrics,
+    publisher::Publisher,
+};
+use tokio::sync::Semaphore;
 use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
@@ -12,7 +21,13 @@ async fn main() -> Result<()> {
 
     metrics::init();
 
-    let app = http::router();
+    let publisher = Publisher::new(&settings)?;
+    let app = http::router(AppState {
+        settings: settings.clone(),
+        health: HealthState::new(Readiness::Ready),
+        publisher,
+        in_flight: Arc::new(Semaphore::new(settings.max_in_flight_requests)),
+    });
 
     axum::Server::bind(&settings.bind_addr)
         .serve(app.into_make_service())
@@ -20,4 +35,3 @@ async fn main() -> Result<()> {
 
     Ok(())
 }
-

@@ -15,17 +15,23 @@ pub struct EventEnvelope {
 }
 
 impl EventEnvelope {
-    pub fn new(event_type: String, user_id: String, room_id: String, payload: serde_json::Value) -> Self {
+    pub fn new(
+        event_type: String,
+        user_id: String,
+        room_id: String,
+        payload: serde_json::Value,
+        producer_timestamp: Option<i64>,
+    ) -> Self {
+        let now = Utc::now().timestamp_millis();
         Self {
             event_id: Uuid::new_v4().to_string(),
             event_type,
             schema_version: "v1".to_string(),
-            producer_timestamp: Utc::now().timestamp_millis(),
-            server_timestamp: Utc::now().timestamp_millis(),
+            producer_timestamp: producer_timestamp.unwrap_or(now),
+            server_timestamp: now,
             user_id,
             room_id,
             payload,
         }
     }
 }
-

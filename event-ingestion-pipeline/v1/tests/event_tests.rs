@@ -7,9 +7,9 @@ fn event_envelope_has_schema_version() {
         "user-1".to_string(),
         "room-1".to_string(),
         serde_json::json!({ "message": "hello" }),
+        None,
     );
 
     assert_eq!(event.schema_version, "v1");
     assert!(!event.event_id.is_empty());
 }
-
