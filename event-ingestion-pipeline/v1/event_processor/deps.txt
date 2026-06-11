@@ -1,1 +1,0 @@
-brew install librdkafka cmake pkg-config
