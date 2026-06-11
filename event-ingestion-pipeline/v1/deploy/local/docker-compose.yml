@@ -1,0 +1,56 @@
+services:
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:latest
+    command:
+      - redpanda
+      - start
+      - --overprovisioned
+      - --smp
+      - "1"
+      - --memory
+      - "1G"
+      - --reserve-memory
+      - "0M"
+      - --check=false
+      - --node-id
+      - "0"
+      - --kafka-addr
+      - "PLAINTEXT://0.0.0.0:9092"
+      - --advertise-kafka-addr
+      - "PLAINTEXT://redpanda:9092"
+    ports:
+      - "9092:9092"
+      - "9644:9644"
+
+  scylladb:
+    image: scylladb/scylla:6.2
+    command: --overprovisioned 1 --smp 1
+    ports:
+      - "9042:9042"
+
+  ingress:
+    build:
+      context: ../..
+      dockerfile: deploy/local/docker/ingress.Dockerfile
+    environment:
+      BIND_ADDR: 0.0.0.0:3000
+      KAFKA_BROKERS: redpanda:9092
+      KAFKA_TOPIC: chat_events
+    ports:
+      - "3000:3000"
+    depends_on:
+      - redpanda
+
+  persistence-consumer:
+    build:
+      context: ../..
+      dockerfile: deploy/local/docker/persistence_consumer.Dockerfile
+    environment:
+      KAFKA_BROKERS: redpanda:9092
+      KAFKA_TOPIC: chat_events
+      KAFKA_CONSUMER_GROUP: chat-events-v1
+      SCYLLA_HOST: scylladb:9042
+    depends_on:
+      - redpanda
+      - scylladb
+
