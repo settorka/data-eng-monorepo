@@ -1,7 +1,7 @@
 use anyhow::Result;
 use futures_util::StreamExt;
 use rdkafka::{
-    consumer::{Consumer, StreamConsumer},
+    consumer::{CommitMode, Consumer, StreamConsumer},
     message::Message,
     ClientConfig,
 };
@@ -12,7 +12,7 @@ use serde::Serialize;
 
 use crate::{config::Settings, domain::event::EventEnvelope};
 
-/// Flat row for ClickHouse (must match table schema)
+/// Flat row for ClickHouse; must match table schema exactly.
 #[derive(Debug, Serialize, clickhouse::Row)]
 struct ClickhouseEvent {
     event_id: String,
@@ -23,7 +23,7 @@ struct ClickhouseEvent {
     created_at: chrono::DateTime<chrono::Utc>,
 }
 
-/// Analytics consumer (non-critical path)
+/// Analytics consumer; best-effort, must not affect ingestion correctness.
 pub async fn run(settings: Settings) -> Result<()> {
     let consumer: StreamConsumer = ClientConfig::new()
         .set("group.id", "clickhouse-consumer")
@@ -33,8 +33,8 @@ pub async fn run(settings: Settings) -> Result<()> {
     consumer.subscribe(&[&settings.kafka_topic])?;
 
     let client = Client::default()
-        .with_url("http://localhost:8123")
-        .with_database("events");
+        .with_url(&settings.clickhouse_url)
+        .with_database(&settings.clickhouse_db);
 
     let mut stream = consumer.stream();
 
@@ -46,12 +46,21 @@ pub async fn run(settings: Settings) -> Result<()> {
                         Ok(event) => {
                             let row = map_event(event);
 
-                            if let Err(err) = insert_event(&client, &row).await {
-                                error!(error = %err, "clickhouse insert failed");
+                            match insert_event(&client, &row).await {
+                                Ok(_) => {
+                                    // commit after processing to avoid infinite replay
+                                    let _ = consumer.commit_message(&msg, CommitMode::Async);
+                                }
+                                Err(err) => {
+                                    error!(error = %err, "clickhouse insert failed");
+                                    // do NOT block or retry; analytics is non-critical
+                                }
                             }
                         }
                         Err(err) => {
                             error!(error = %err, "decode failed (analytics path)");
+                            // commit anyway; malformed analytics data is discarded
+                            let _ = consumer.commit_message(&msg, CommitMode::Async);
                         }
                     }
                 }
@@ -65,21 +74,22 @@ pub async fn run(settings: Settings) -> Result<()> {
     Ok(())
 }
 
-/// Converts the ingestion model to analytics model
+/// Convert ingestion model → analytics model.
 fn map_event(event: EventEnvelope) -> ClickhouseEvent {
     ClickhouseEvent {
         event_id: event.event_id,
         event_type: event.event_type,
         user_id: event.user_id,
         room_id: event.room_id,
-        payload: event.payload.to_string(),
+        payload: event.payload.to_string(), // flattened JSON for now
         created_at: chrono::DateTime::<chrono::Utc>::from_timestamp_millis(
-            event.server_timestamp
-        ).unwrap_or_else(|| chrono::Utc::now()),
+            event.server_timestamp,
+        )
+        .unwrap_or_else(|| chrono::Utc::now()), // never panic in analytics path
     }
 }
 
-/// Insert row into ClickHouse
+/// Insert single row into ClickHouse.
 async fn insert_event(client: &Client, row: &ClickhouseEvent) -> Result<()> {
     let mut insert = client
         .insert::<ClickhouseEvent>("events")
