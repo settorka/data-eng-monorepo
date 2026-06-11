@@ -27,39 +27,8 @@ impl Persistence {
             .await
             .context("failed to connect to scylla")?;
 
-        session
-            .query(
-                format!(
-                    "CREATE KEYSPACE IF NOT EXISTS {} WITH replication = {{'class': 'SimpleStrategy', 'replication_factor': 1}}",
-                    settings.scylla_keyspace
-                ),
-                &[],
-            )
-            .await
-            .context("failed to create keyspace")?;
-
-        session
-            .query(
-                format!(
-                    "CREATE TABLE IF NOT EXISTS {}.{} (
-                        event_id text PRIMARY KEY,
-                        event_type text,
-                        schema_version text,
-                        producer_timestamp bigint,
-                        server_timestamp bigint,
-                        user_id text,
-                        room_id text,
-                        payload text
-                    )",
-                    settings.scylla_keyspace, settings.scylla_table
-                ),
-                &[],
-            )
-            .await
-            .context("failed to create events table")?;
-
         let insert_query = Query::new(format!(
-            "INSERT INTO {}.{} (event_id, event_type, schema_version, producer_timestamp, server_timestamp, user_id, room_id, payload) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO {}.{} (event_id, event_type, user_id, room_id, payload, producer_timestamp, server_timestamp, schema_version) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             settings.scylla_keyspace, settings.scylla_table
         ));
 
@@ -73,18 +42,20 @@ impl Persistence {
         for event in events {
             let payload =
                 serde_json::to_string(&event.payload).context("failed to serialize payload")?;
+            let schema_version = parse_schema_version(&event.schema_version)
+                .with_context(|| format!("failed to parse schema version for event {}", event.event_id))?;
             self.session
                 .query(
                     self.insert_query.clone(),
                     (
                         &event.event_id,
                         &event.event_type,
-                        &event.schema_version,
-                        event.producer_timestamp,
-                        event.server_timestamp,
                         &event.user_id,
                         &event.room_id,
                         payload,
+                        event.producer_timestamp,
+                        event.server_timestamp,
+                        schema_version,
                     ),
                 )
                 .await
@@ -92,4 +63,12 @@ impl Persistence {
         }
         Ok(())
     }
+}
+
+fn parse_schema_version(value: &str) -> Result<i32> {
+    let trimmed = value.trim();
+    let numeric = trimmed.strip_prefix('v').unwrap_or(trimmed);
+    numeric
+        .parse::<i32>()
+        .context("schema_version must be numeric or prefixed with 'v'")
 }

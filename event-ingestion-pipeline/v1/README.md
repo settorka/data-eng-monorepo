@@ -1,10 +1,8 @@
 # Event Ingestion Pipeline v1
 
-Production-aware spec for a bounded stochastic state machine that converts incoming demand into durable outputs under adversarial, failure-prone, and resource-constrained conditions.
-
 ## Scope
 
-`v0` is the current implementation baseline: HTTP ingest, Redpanda publish, Scylla and Clickhouse consume/persist.
+`v0` is the current implementation baseline: HTTP ingest, Redpanda publish, Scylla persistence, and optional ClickHouse analytics fanout.
 
 `v1` evolves `v0` into a production-aware system by adding:
 - explicit correctness contracts
@@ -108,6 +106,32 @@ Operational:
 - recovery must be bounded by runbook and replay path
 - deploy and rollback must preserve correctness invariants
 
+#### Qualities to optimize for
+
+| NFR | Optimize | Why |
+| --- | --- | --- |
+| acknowledged loss | minimize to `0` | core correctness boundary |
+| invalid work admitted | minimize to `0` | prevents bad demand from consuming durable capacity |
+| duplicate side effects | minimize | at-least-once is tolerated, duplicate impact is not free |
+| queue depth | target bounded `< 80%` in steady operation | preserves headroom for bursts and replay |
+| consumer lag | target `< 30 s` sustained | keeps recovery and operator action bounded |
+| publish latency | minimize subject to safety | acceptance should be fast but never unsafe |
+| durability latency | minimize subject to commit-after-write | protects correctness before throughput |
+| retry amplification | minimize | retries consume broker, DB, and operator budget |
+| replay amplification | minimize | replay is recovery, not normal throughput |
+| observability lag | minimize | hidden failures expand blast radius |
+| operator intervention | minimize | manual steps do not scale and increase risk |
+| analytic completeness | maximize only within best-effort budget | analytics must not steal capacity from durability |
+| throughput | maximize within queue, CPU, DB, and correctness bounds | throughput is valuable only if bounded |
+| availability | maximize subject to fail-closed durability rules | unsafe acceptance is worse than explicit rejection |
+
+Conflict resolution rules:
+- correctness beats availability
+- durability beats latency
+- bounded resource use beats short-term throughput spikes
+- core write path beats best-effort analytics
+- explicit rejection beats hidden overload
+
 ### Correctness contract
 
 Must never happen:
@@ -127,6 +151,38 @@ Sacrificed under overload:
 - latency targets
 - non-critical analytics fanout
 
+### Delivery semantics
+
+#### Write path semantics
+
+- ingress to topic is **ack-after-broker-ack**
+- topic to Scylla is **at-least-once consume, commit-after-durable-write**
+- persistence failure after bounded retry becomes **durable DLQ**, then offset commit
+- no part of the write path provides exactly-once end-to-end semantics
+
+Implications:
+- duplicates are possible across consumer restart, broker redelivery, replay, or partial failure
+- silent acknowledged loss is not acceptable
+- `event_id` is the stable identity used to reason about duplicate handling and replay provenance
+
+#### Read path semantics
+
+- Redpanda to ClickHouse is **best-effort**
+- analytics failure must not block ingress, persistence, or offset safety in the durability path
+- malformed analytics payloads may be skipped after logging because analytics is outside the core correctness contract
+
+#### Failure-mode semantics
+
+| Failure point | Delivery semantic consequence |
+| --- | --- |
+| request rejected before publish | no delivery; cheap fail |
+| broker publish timeout or failure | no acceptance; client sees `503` |
+| broker ack succeeds, consumer delayed | durable in topic; delayed persistence is allowed |
+| Scylla write fails, retry budget remains | no offset commit; work remains in retry path |
+| Scylla write fails, retry budget exhausted | event is preserved in DLQ; offset is committed after DLQ |
+| malformed consumed payload | raw payload preserved in DLQ; main path offset committed after preservation |
+| analytics insert fails | analytics loss or delay is allowed; core durability unaffected |
+
 ## Model
 
 ### Core entities
@@ -136,6 +192,7 @@ Sacrificed under overload:
 - `Topic`: ordered durable event log
 - `ConsumerGroup`: offset ownership and partition work assignment
 - `MessageRow`: durable Scylla record
+- `AnalyticsRow`: best-effort ClickHouse analytics row
 - `DLQRecord`: failed event plus reason and provenance
 - `AuditRecord`: schema, config, replay, deploy, and rollback history
 
@@ -144,7 +201,8 @@ Sacrificed under overload:
 #### Graph model
 
 The system is a constrained directed multigraph with:
-- data edges: ingest -> publish -> consume -> persist
+- write-path data edges: ingest -> publish -> consume -> persist
+- read-path data edges: topic -> analytics consumer -> ClickHouse
 - control edges: admission, readiness, replay, rollback
 - observability edges: metrics, logs, traces, audit
 
@@ -153,6 +211,7 @@ Quantified graph constraints:
 - optional analytics fanout: `+1` branch from topic
 - publish cut set: ingress API -> Redpanda
 - persistence cut set: consumer -> ScyllaDB
+- analytics cut set: analytics consumer -> ClickHouse
 - replay cycle count: `1` explicit cycle `DLQ -> replay -> topic`
 
 ```mermaid
@@ -241,7 +300,8 @@ flowchart LR
     API --> Topic["Redpanda"]
     Topic --> Consumer["Scylla consumer"]
     Consumer --> Scylla["ScyllaDB"]
-    Topic -.optional.-> Analytics["Analytics consumer"]
+    Topic -.best effort.-> Analytics["Analytics consumer"]
+    Analytics --> ClickHouse["ClickHouse"]
 ```
 
 ### System design
@@ -251,14 +311,16 @@ flowchart LR
     Client["Clients"] --> Boundary["Ingress boundary"]
     Boundary --> API["Ingress API"]
     API --> Admit["Admission control"]
-    Admit --> Producer["Producer"]
-    Producer --> Topic["Topic"]
-    Topic --> Consumer["Consumer group"]
-    Consumer --> Writer["Writer"]
+    Admit --> Producer["Kafka producer"]
+    Producer --> Topic["Redpanda topic"]
+    Topic --> Consumer["Persistence consumer group"]
+    Consumer --> Writer["Scylla writer"]
     Writer --> Scylla["ScyllaDB"]
     Consumer --> DLQ["DLQ"]
     DLQ --> Replay["Replay control"]
     Replay --> Topic
+    Topic -.best effort.-> Analytics["ClickHouse consumer"]
+    Analytics --> ClickHouse["ClickHouse"]
     API -.health.-> Ready["Readiness"]
     Consumer -.health.-> Ready
     API -.obs.-> Obs["Observability"]
@@ -266,6 +328,42 @@ flowchart LR
     API -.audit.-> Audit["Audit"]
     Consumer -.audit.-> Audit
     Topic -.optional.-> Analytics["Analytics"]
+```
+
+### Write path
+
+The write path is correctness-critical and producer-consumer based:
+- ingress validates and normalizes HTTP requests
+- ingress publishes to Redpanda and returns `202` only after broker ack
+- the persistence consumer reads from the topic, batches events, writes to Scylla, then commits offsets
+- if persistence exhausts bounded retry, the consumer writes a durable DLQ record and commits only after that failure path is preserved
+- producer and consumer are intentionally decoupled by the topic so the write path can absorb burst, retry, and dependency skew without coupling client lifetime to database lifetime
+
+```mermaid
+flowchart LR
+    Client["Client"] --> API["Ingress API"]
+    API --> Producer["Kafka producer"]
+    Producer --> Topic["Redpanda topic"]
+    Topic --> Consumer["Persistence consumer"]
+    Consumer --> Batch["Bounded batch"]
+    Batch --> Scylla["ScyllaDB"]
+    Batch --> Commit["Offset commit"]
+    Batch --> DLQ["DLQ on exhausted failure"]
+```
+
+### Read path
+
+The read path is split:
+- the durability read path is the persistence consumer reading from Redpanda into Scylla
+- the analytics read path is optional and best-effort; it must not affect ingress correctness or persistence correctness
+- the analytics consumer is a separate producer-consumer branch with weaker guarantees and lower priority under live pressure
+
+```mermaid
+flowchart LR
+    Topic["Redpanda topic"] --> PersistConsumer["Persistence consumer"]
+    PersistConsumer --> Scylla["ScyllaDB"]
+    Topic -.best effort.-> AnalyticsConsumer["Analytics consumer"]
+    AnalyticsConsumer --> ClickHouse["ClickHouse"]
 ```
 
 ### API contract
@@ -277,7 +375,8 @@ flowchart LR
 - Overload: `429`
 - Dependency degradation: `503`
 - Required header: `Content-Type: application/json`
-- Response fields: `ok`, `event_id`, `topic`, `error`
+- Response fields on success: `ok`, `event_id`, `request_id`
+- Response fields on error: `ok`, `code`, `message`, `request_id`
 
 ### Path-level contracts
 
@@ -287,7 +386,20 @@ flowchart LR
 | Topic -> ScyllaDB | offset is committed only after durable Scylla write |
 | Topic -> DLQ | bounded retries end in durable failure record |
 | DLQ -> Replay -> Topic | replay preserves `event_id`, schema version, and failure provenance |
+| Topic -> ClickHouse | best-effort analytics path may drop or skip non-critical work without affecting durability correctness |
 | Deploy -> Rollback | rollback preserves offset correctness, schema compatibility, and replayability |
+
+### Producer-consumer implications when live
+
+Write path:
+- producers can continue briefly during consumer slowdown until topic, queue, or readiness budgets are hit
+- consumer lag is the live signal that decoupling is being consumed as backlog
+- once backlog risk exceeds budget, the system must shift from absorption to rejection with `429` or `503`
+
+Read path:
+- the persistence consumer is part of the correctness boundary and therefore protected first
+- the analytics consumer competes for broker and compute resources but may be slowed, disabled, or allowed to miss data
+- replay re-enters through the same producer-consumer topology, so replay rate must be bounded to avoid self-induced congestion
 
 ## Low-level design
 
@@ -380,6 +492,7 @@ Budget consequences:
 | DLQ record | durable failed work | poison loops, irrecoverable failures | silent loss or infinite retry |
 | Correlation metadata | join ingress, broker, consumer, audit | debugging blind spots | non-falsifiable incident analysis |
 | Versioned envelope | preserve replay semantics | schema drift, version skew | incompatible replay |
+| Schema files under `schema/scylla` | owned storage contract | runtime/schema drift | service mutates schema implicitly |
 
 Selection rules:
 - buffers must be bounded by count, time, or bytes
@@ -388,6 +501,51 @@ Selection rules:
 - latency may not be improved by hiding pressure
 
 ## Control policy
+
+## Deep dives
+
+### Production implications of NFRs
+
+#### Bounded resource use
+
+Live implication:
+- every queue, batch, timeout, and retry budget eventually becomes a visible rejection, lag increase, or DLQ increase
+- bounded systems fail noisily but predictably; unbounded systems fail late and opaquely
+
+#### Delivery correctness
+
+Live implication:
+- at-least-once means operators must expect duplicate arrival during restart, replay, and partial outage
+- commit-after-write shifts risk from loss toward duplication and lag, which is the correct trade
+- DLQ volume is part of the acknowledged output ledger, not an implementation detail
+
+#### Dependency degradation
+
+Live implication:
+- broker degradation first shows up as publish latency and `503`
+- Scylla degradation first shows up as consumer lag, retry growth, and DLQ pressure
+- analytics degradation should remain isolated unless it begins stealing shared broker or compute capacity
+
+#### Overload behavior
+
+Live implication:
+- overload consumes queue headroom first, then admission budget, then forces explicit rejection
+- if overload is hidden, the system converts short spikes into long recovery tails
+- the correct live question is not "can we accept more?" but "what invariant breaks if we do?"
+
+#### Recovery behavior
+
+Live implication:
+- replay is not free throughput; it competes with live demand for broker, DB, and operator budget
+- recovery time is governed by backlog size, sustained `mu`, and replay rate limiting
+- a healthy system recovers by controlled draining, not by unconstrained catch-up
+
+#### Observability
+
+Live implication:
+- metrics must distinguish loss risk, lag risk, and dependency risk
+- without correlation between `202`, topic append, Scylla writes, and DLQ writes, delivery semantics cannot be proven live
+- observability gaps increase blast radius because operators must guess state
 
 ### Failure-aware behavior
 
@@ -402,7 +560,8 @@ Selection rules:
 - readiness drops when broker or Scylla health is unsafe
 - `429` is used for local overload
 - `503` is used for dependency unavailability or unsafe dependency state
-- optional paths such as analytics fail closed before critical durability paths
+- optional paths such as analytics fail independently before critical durability paths
+- analytics is best-effort and outside the write-path correctness contract
 
 ### Edge-aware behavior
 
@@ -456,6 +615,7 @@ Logs must be structured and correlated. Traces must connect ingress, broker, con
 
 - preserve lineage from ingress to persistence
 - record schema, config, replay, deploy, and rollback actions
+- treat `schema/scylla` as the source of truth for Scylla schema lifecycle
 - make retention and access policy explicit
 
 ## Recovery
@@ -472,6 +632,7 @@ Logs must be structured and correlated. Traces must connect ingress, broker, con
 | Replay surge | lag and storage pressure | bounded catch-up mode | yes | yes | schedule replay and observe lag |
 | Clock skew | timestamp anomalies | preserve event with metadata | yes | yes | investigate producer clocks |
 | Operator misconfig | readiness fail or bad routing | fail closed where possible | yes | yes | revert via audited change |
+| ClickHouse unavailable | analytics insert failure | log and continue; no impact to durability path | yes | yes | restore analytics separately |
 
 ## Economic model
 
