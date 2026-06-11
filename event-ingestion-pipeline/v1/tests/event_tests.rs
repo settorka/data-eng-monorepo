@@ -1,4 +1,4 @@
-use event_ingestion_pipeline_v1::event::EventEnvelope;
+use event_ingestion_pipeline_v1::domain::event::EventEnvelope;
 
 #[test]
 fn event_envelope_has_schema_version() {
