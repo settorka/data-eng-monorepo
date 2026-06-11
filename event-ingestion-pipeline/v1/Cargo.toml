@@ -7,6 +7,7 @@ edition = "2021"
 anyhow = "1"
 axum = { version = "0.6", features = ["macros"] }
 chrono = { version = "0.4", features = ["serde"] }
+clickhouse = "0.15.1"
 futures-util = "0.3"
 http = "0.2"
 rdkafka = { version = "0.36", features = ["cmake-build", "tokio"] }
