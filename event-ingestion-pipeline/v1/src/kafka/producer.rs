@@ -7,7 +7,7 @@ use rdkafka::{
 };
 use tokio::time::timeout;
 
-use crate::{config::Settings, event::EventEnvelope};
+use crate::{config::Settings, domain::event::EventEnvelope};
 
 #[derive(Clone)]
 pub struct Publisher {
@@ -20,7 +20,10 @@ impl Publisher {
     pub fn new(settings: &Settings) -> Result<Self> {
         let producer = ClientConfig::new()
             .set("bootstrap.servers", &settings.kafka_brokers)
-            .set("message.timeout.ms", settings.publish_timeout_ms.to_string())
+            .set(
+                "message.timeout.ms",
+                settings.publish_timeout_ms.to_string(),
+            )
             .set(
                 "queue.buffering.max.messages",
                 settings.queue_capacity.to_string(),
@@ -40,14 +43,16 @@ impl Publisher {
     }
 
     pub async fn publish_json<T: serde::Serialize>(&self, value: &T, key: &str) -> Result<()> {
-        let payload = serde_json::to_string(value).context("failed to serialize publish payload")?;
-        let record = FutureRecord::to(&self.topic)
-            .key(key)
-            .payload(&payload);
+        let payload =
+            serde_json::to_string(value).context("failed to serialize publish payload")?;
+        let record = FutureRecord::to(&self.topic).key(key).payload(&payload);
 
-        let delivery = timeout(self.publish_timeout, self.producer.send(record, self.publish_timeout))
-            .await
-            .context("timed out waiting for broker ack")?;
+        let delivery = timeout(
+            self.publish_timeout,
+            self.producer.send(record, self.publish_timeout),
+        )
+        .await
+        .context("timed out waiting for broker ack")?;
 
         match delivery {
             Ok(_) => Ok(()),

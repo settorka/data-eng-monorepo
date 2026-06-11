@@ -18,9 +18,9 @@ use uuid::Uuid;
 
 use crate::{
     config::Settings,
-    event::EventEnvelope,
-    health::{HealthState, Readiness},
-    publisher::Publisher,
+    domain::event::EventEnvelope,
+    kafka::producer::Publisher,
+    observability::health::{HealthState, Readiness},
 };
 
 #[derive(Clone)]
@@ -145,7 +145,8 @@ async fn ingest(
                 .into_response();
             response.headers_mut().insert(
                 "x-request-id",
-                HeaderValue::from_str(&request_id).unwrap_or_else(|_| HeaderValue::from_static("invalid")),
+                HeaderValue::from_str(&request_id)
+                    .unwrap_or_else(|_| HeaderValue::from_static("invalid")),
             );
             response
         }

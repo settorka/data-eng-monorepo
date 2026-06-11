@@ -31,16 +31,12 @@ impl Settings {
                 .context("invalid BIND_ADDR")?,
             kafka_brokers: env::var("KAFKA_BROKERS")
                 .unwrap_or_else(|_| "127.0.0.1:9092".to_string()),
-            kafka_topic: env::var("KAFKA_TOPIC")
-                .unwrap_or_else(|_| "chat_events".to_string()),
-            dlq_topic: env::var("DLQ_TOPIC")
-                .unwrap_or_else(|_| "chat_events_dlq".to_string()),
+            kafka_topic: env::var("KAFKA_TOPIC").unwrap_or_else(|_| "chat_events".to_string()),
+            dlq_topic: env::var("DLQ_TOPIC").unwrap_or_else(|_| "chat_events_dlq".to_string()),
             kafka_consumer_group: env::var("KAFKA_CONSUMER_GROUP")
                 .unwrap_or_else(|_| "chat-events-v1".to_string()),
-            scylla_host: env::var("SCYLLA_HOST")
-                .unwrap_or_else(|_| "127.0.0.1:9042".to_string()),
-            scylla_keyspace: env::var("SCYLLA_KEYSPACE")
-                .unwrap_or_else(|_| "chat_app".to_string()),
+            scylla_host: env::var("SCYLLA_HOST").unwrap_or_else(|_| "127.0.0.1:9042".to_string()),
+            scylla_keyspace: env::var("SCYLLA_KEYSPACE").unwrap_or_else(|_| "chat_app".to_string()),
             scylla_table: env::var("SCYLLA_TABLE")
                 .unwrap_or_else(|_| "processed_events".to_string()),
             max_request_body_bytes: env_usize("MAX_REQUEST_BODY_BYTES", 64 * 1024)?,

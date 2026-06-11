@@ -1,7 +1,7 @@
 use anyhow::Result;
 use serde::Serialize;
 
-use crate::{event::EventEnvelope, publisher::Publisher};
+use crate::{domain::event::EventEnvelope, kafka::producer::Publisher};
 
 #[derive(Debug, Serialize)]
 pub struct DlqRecord {

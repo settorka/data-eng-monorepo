@@ -1,6 +1,9 @@
 use anyhow::Result;
 use event_ingestion_pipeline_v1::{
-    config::Settings, consumer, metrics, persistence::Persistence, publisher::Publisher,
+    config::Settings,
+    kafka::{consumer, producer::Publisher},
+    observability::metrics,
+    persistence::scylla::Persistence,
 };
 use tracing_subscriber::EnvFilter;
 

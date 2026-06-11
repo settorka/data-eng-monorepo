@@ -11,11 +11,8 @@ use rdkafka::{
 use tracing::{error, warn};
 
 use crate::{
-    config::Settings,
-    dlq,
-    event::EventEnvelope,
-    persistence::Persistence,
-    publisher::Publisher,
+    config::Settings, domain::event::EventEnvelope, failure::dlq, kafka::producer::Publisher,
+    persistence::scylla::Persistence,
 };
 
 pub async fn run(

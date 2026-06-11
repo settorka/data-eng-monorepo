@@ -3,10 +3,12 @@ use std::sync::Arc;
 use anyhow::Result;
 use event_ingestion_pipeline_v1::{
     config::Settings,
-    health::{HealthState, Readiness},
-    http::{self, AppState},
-    metrics,
-    publisher::Publisher,
+    ingress::routes::{self, AppState},
+    kafka::producer::Publisher,
+    observability::{
+        health::{HealthState, Readiness},
+        metrics,
+    },
 };
 use tokio::sync::Semaphore;
 use tracing_subscriber::EnvFilter;
@@ -22,7 +24,7 @@ async fn main() -> Result<()> {
     metrics::init();
 
     let publisher = Publisher::new(&settings)?;
-    let app = http::router(AppState {
+    let app = routes::router(AppState {
         settings: settings.clone(),
         health: HealthState::new(Readiness::Ready),
         publisher,

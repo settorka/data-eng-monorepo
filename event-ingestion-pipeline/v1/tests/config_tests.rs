@@ -6,4 +6,3 @@ fn settings_have_defaults() {
     assert_eq!(settings.kafka_topic, "chat_events");
     assert_eq!(settings.max_request_body_bytes, 64 * 1024);
 }
-

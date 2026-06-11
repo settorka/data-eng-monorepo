@@ -1,10 +1,8 @@
 pub mod config;
-pub mod consumer;
-pub mod dlq;
-pub mod event;
-pub mod health;
-pub mod http;
-pub mod metrics;
+pub mod domain;
+pub mod failure;
+pub mod ingress;
+pub mod kafka;
+pub mod observability;
 pub mod persistence;
-pub mod publisher;
-
+pub mod replay;

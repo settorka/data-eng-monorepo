@@ -3,7 +3,7 @@ use std::sync::Arc;
 use anyhow::{Context, Result};
 use scylla::{query::Query, Session, SessionBuilder};
 
-use crate::{config::Settings, event::EventEnvelope};
+use crate::{config::Settings, domain::event::EventEnvelope};
 
 pub struct Persistence {
     session: Arc<Session>,
@@ -71,7 +71,8 @@ impl Persistence {
 
     pub async fn persist_batch(&self, events: &[EventEnvelope]) -> Result<()> {
         for event in events {
-            let payload = serde_json::to_string(&event.payload).context("failed to serialize payload")?;
+            let payload =
+                serde_json::to_string(&event.payload).context("failed to serialize payload")?;
             self.session
                 .query(
                     self.insert_query.clone(),
