@@ -1,6 +1,6 @@
 use anyhow::Result;
 use serde::Serialize;
-
+use rdkafka::Message;
 use crate::{
     domain::event::EventEnvelope,
     kafka::producer::Publisher,

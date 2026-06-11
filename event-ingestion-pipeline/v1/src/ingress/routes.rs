@@ -20,7 +20,10 @@ use crate::{
     config::Settings,
     domain::event::EventEnvelope,
     kafka::producer::Publisher,
-    observability::health::{HealthState, Liveness, Readiness},
+    observability::{
+        health::{HealthState, Liveness},
+        metrics,
+    },
 };
 
 #[derive(Clone)]
@@ -28,7 +31,7 @@ pub struct AppState {
     pub settings: Settings,
     pub health: Arc<HealthState>,
     pub publisher: Publisher,
-    pub in_flight: Arc<Semaphore>, // bounds concurrent work to protect memory/CPU
+    pub in_flight: Arc<Semaphore>, // bounds concurrent work to prevent overload
 }
 
 #[derive(Debug, Deserialize)]
@@ -52,7 +55,7 @@ pub struct ErrorBody {
     pub ok: bool,
     pub code: &'static str,
     pub message: String,
-    pub request_id: String, // required for tracing failures end-to-end
+    pub request_id: String, // required for end-to-end traceability
 }
 
 /// Router enforces bounded input and execution time.
@@ -66,16 +69,16 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/chat/ingestion", post(ingest))
         .layer(
             ServiceBuilder::new()
-                .layer(TraceLayer::new_for_http()) // ensures every request is observable
-                .layer(RequestBodyLimitLayer::new(max_request_body_bytes)) // prevents memory blowup
+                .layer(TraceLayer::new_for_http()) // ensures all requests are observable
+                .layer(RequestBodyLimitLayer::new(max_request_body_bytes)) // prevents memory exhaustion
                 .layer(HandleErrorLayer::new(handle_timeout_error))
-                .timeout(request_timeout), // prevents stuck requests from consuming capacity
+                .timeout(request_timeout), // prevents stuck work from consuming capacity
         )
         .layer(DefaultBodyLimit::disable())
         .with_state(state)
 }
 
-/// Liveness only reflects process health, not dependencies.
+/// Liveness reflects only process health.
 async fn healthz(State(state): State<AppState>) -> Json<Liveness> {
     Json(state.health.liveness("ingress"))
 }
@@ -99,9 +102,12 @@ async fn ingest(
 ) -> Response {
     let request_id = header_or_uuid(&headers, "x-request-id");
 
-    // Prevent accepting work when durability cannot be guaranteed
+    // Reject when durability cannot be guaranteed
     if !state.health.is_ready() {
         warn!(request_id, "rejecting: dependency unready");
+
+        metrics::inc_rejected();
+
         return error_response(
             StatusCode::SERVICE_UNAVAILABLE,
             "dependency_unavailable",
@@ -110,11 +116,14 @@ async fn ingest(
         );
     }
 
-    // Bound concurrent work to avoid unbounded memory and latency
+    // Bound concurrent work to prevent resource exhaustion
     let _permit = match state.in_flight.clone().try_acquire_owned() {
         Ok(p) => p,
         Err(_) => {
             warn!(request_id, "rejecting: overloaded");
+
+            metrics::inc_rejected();
+
             return error_response(
                 StatusCode::TOO_MANY_REQUESTS,
                 "overloaded",
@@ -124,9 +133,12 @@ async fn ingest(
         }
     };
 
-    // Reject invalid input before it enters the durable pipeline
+    // Reject invalid input before entering pipeline
     if let Err(msg) = validate_request(&request) {
         warn!(request_id, error = %msg, "rejecting: invalid request");
+
+        metrics::inc_rejected();
+
         return error_response(
             StatusCode::UNPROCESSABLE_ENTITY,
             "invalid_request",
@@ -135,32 +147,23 @@ async fn ingest(
         );
     }
 
-    // Normalize into stable, replayable envelope
-    let event = match EventEnvelope::new(
+    // Normalize into stable event envelope
+    let event = EventEnvelope::new(
         request.event_type,
         request.user_id,
         request.room_id,
         request.payload,
         request.producer_timestamp,
-    ) {
-        Ok(e) => e,
-        Err(e) => {
-            warn!(request_id, error = %e, "rejecting: invalid event");
-            return error_response(
-                StatusCode::UNPROCESSABLE_ENTITY,
-                "invalid_event",
-                &e.to_string(),
-                &request_id,
-            );
-        }
-    };
+    );
 
     let event_id = event.event_id.clone();
 
-    // Only acknowledge after broker durability is confirmed
+    // Only acknowledge after broker durability
     match state.publisher.publish(&event).await {
         Ok(()) => {
             info!(request_id, event_id, "event accepted");
+
+            metrics::inc_accepted();
 
             let mut response = (
                 StatusCode::ACCEPTED,
@@ -183,6 +186,9 @@ async fn ingest(
         Err(err) => {
             error!(request_id, event_id, error = %err, "publish failed");
 
+            metrics::inc_publish_failure();
+            metrics::inc_rejected();
+
             error_response(
                 StatusCode::SERVICE_UNAVAILABLE,
                 "publish_failed",
@@ -193,7 +199,7 @@ async fn ingest(
     }
 }
 
-/// Prevent malformed data from reaching Kafka or persistence.
+/// Prevent malformed data from entering the system.
 fn validate_request(request: &IngestRequest) -> Result<(), String> {
     if request.event_type.trim().is_empty() {
         return Err("event_type must be non-empty".into());
@@ -210,7 +216,7 @@ fn validate_request(request: &IngestRequest) -> Result<(), String> {
     Ok(())
 }
 
-/// Ensures every request has a correlation id for tracing.
+/// Ensure every request has a correlation id.
 fn header_or_uuid(headers: &HeaderMap, name: &str) -> String {
     headers
         .get(name)
@@ -219,7 +225,7 @@ fn header_or_uuid(headers: &HeaderMap, name: &str) -> String {
         .unwrap_or_else(|| Uuid::new_v4().to_string())
 }
 
-/// Standardized failure surface for clients and logs.
+/// Standard failure response with traceability.
 fn error_response(
     status: StatusCode,
     code: &'static str,
